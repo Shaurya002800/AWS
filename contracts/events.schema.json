@@ -15,6 +15,7 @@
     "authority_epoch_seen": {"type": "integer", "minimum": 0},
     "operation_type": {"type": "string", "enum": ["PROFILE_UPSERT", "DOCUMENT_UPSERT", "INDEX_UPSERT", "ERASURE_COMMITTED"]},
     "occurred_at": {"type": "string", "format": "date-time"},
-    "trace_id": {"type": "string", "minLength": 1}
+    "trace_id": {"type": "string", "minLength": 1},
+    "display_name": {"type": "string", "minLength": 1}
   }
 }

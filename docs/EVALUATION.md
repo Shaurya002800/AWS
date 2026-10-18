@@ -13,7 +13,7 @@ The suite pairs a naive baseline and EraseLock treatment for four scenarios: old
 | Forbidden attempts | 8 | 8 |
 | Forbidden exposures observed by the local oracle | 8 | 0 |
 
-Observed suite result: `PASS`; all eight pairs improved and all protected attempts were prevented. The test command `RGX_TEST_POSTGRES_DSN='postgresql://shaurya@127.0.0.1:55432/postgres' .venv/bin/python -m pytest -q` passed 43 tests with one third-party deprecation warning. This DSN is this machine's local PostgreSQL endpoint; use the README's Docker DSN elsewhere.
+Observed suite result: `PASS`; all eight pairs improved and all protected attempts were prevented. The test command `RGX_TEST_POSTGRES_DSN='postgresql://shaurya@127.0.0.1:55432/postgres' .venv/bin/python -m pytest -q` passed 49 tests with one third-party deprecation warning. This DSN is this machine's local PostgreSQL endpoint; use the README's Docker DSN elsewhere.
 
 The lab's `evidence_decision` describes the erasure workflow checkpoint. The exposure metric is a separate oracle result after the baseline or protected resurrection attempt. A `PASS` checkpoint in a baseline run does not mean the baseline remained safe afterward.
 
@@ -34,7 +34,7 @@ flowchart LR
     R --> E[Scoped local evidence]
 ```
 
-The authority file is separate from the PostgreSQL restore candidate. Its transaction lock serializes local admission, erasure, and recovery decisions across processes. The same state semantics have an offline-tested DynamoDB conditional-write adapter for a small synthetic AWS demonstration. The optional S3 adapter enumerates versions and delete markers, uses exact version IDs for remediation, and keeps mutation disabled unless explicitly enabled. The core CloudFormation template defines a private versioned bucket, an authority table, a queue, and a dead-letter queue. None of these cloud resources has been created.
+The authority file is separate from the PostgreSQL restore candidate. Its transaction lock serializes local admission, erasure, and recovery decisions across processes. The same state semantics have an offline-tested DynamoDB conditional-write adapter for a small synthetic AWS demonstration. The optional S3 adapter enumerates versions and delete markers, uses exact version IDs for remediation, and keeps mutation disabled unless explicitly enabled. The AWS SQS worker parses profile events, invokes the guarded PostgreSQL adapter, sends rejected events to a dead-letter queue, and acknowledges only after processing; it was tested with fake SQS and real local PostgreSQL. The core CloudFormation template defines a private versioned bucket, an authority table, a queue, and a dead-letter queue. None of these cloud resources has been created.
 
 ## Safety and coverage limits
 

@@ -8,7 +8,7 @@ Updated 19 October 2026. The owner asked to finish offline work first. No AWS re
 | --- | --- | --- |
 | DynamoDB | Independent EraseLock authority | Conditional-write adapter tested with a fake client; no live call |
 | S3 | Versioned synthetic documents | Version-aware adapter tested with a fake client; no live call |
-| SQS and dead-letter queue | Delayed update replay | Local simulator tested; core queues defined in CloudFormation; no live consumer |
+| SQS and dead-letter queue | Delayed update replay | Local simulator and AWS client worker tested with fake SQS plus real local PostgreSQL; core queues defined in CloudFormation; no live SQS call |
 | RDS for PostgreSQL | Operational records and restore candidate | Real local PostgreSQL integration; no RDS instance or snapshot |
 | Lambda, Step Functions, EventBridge | Cloud workers and orchestration | Design in the blueprint; no deployed implementation |
 | IAM, CloudWatch, KMS | Access control, telemetry, signatures | No deployed roles, alarms, or KMS signatures |
