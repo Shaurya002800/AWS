@@ -1,0 +1,23 @@
+name: Local checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install project
+        run: python -m pip install -e '.[dev]'
+      - name: Run offline tests
+        run: PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -q
+      - name: Check generated OpenAPI contract
+        run: |
+          python -m scripts.export_openapi
+          git diff --exit-code -- contracts/api.openapi.json

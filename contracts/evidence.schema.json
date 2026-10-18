@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rewindguard.local/contracts/evidence.schema.json",
+  "title": "RewindGuard scoped adapter evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["adapter", "tenant_id", "subject_id", "subject_generation", "authority_epoch", "result", "trace_id", "inspected_count", "forbidden_count", "required", "retention_allowed"],
+  "properties": {
+    "adapter": {"type": "string", "minLength": 1},
+    "tenant_id": {"type": "string", "minLength": 1},
+    "subject_id": {"type": "string", "minLength": 1},
+    "subject_generation": {"type": "integer", "minimum": 1},
+    "authority_epoch": {"type": "integer", "minimum": 0},
+    "result": {"type": "string", "enum": ["PASS", "FAIL", "BLOCKED", "RESTRICTED", "NOT_APPLICABLE", "NOT_VERIFIABLE"]},
+    "trace_id": {"type": "string", "minLength": 1},
+    "inspected_count": {"type": "integer", "minimum": 0},
+    "forbidden_count": {"type": "integer", "minimum": 0},
+    "required": {"type": "boolean"},
+    "retention_allowed": {"type": "boolean"},
+    "uncertainty": {"type": ["string", "null"]}
+  }
+}
