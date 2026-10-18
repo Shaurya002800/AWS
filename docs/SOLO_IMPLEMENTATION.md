@@ -9,9 +9,9 @@ Build a reproducible local prototype that demonstrates erasure, stale message re
 ## Current constraints
 
 - AWS account plan, credits, Region, and deadline are not yet recorded.
-- No AWS CLI or SDK is currently installed in the local environment.
+- The optional AWS SDK is installed in the local project environment; AWS CLI is not installed. No AWS credentials or cloud resources have been used.
 - Docker Desktop's daemon is not running. PostgreSQL 15 binaries and psycopg are installed locally, so database integration can proceed without Docker.
-- The current `InMemoryAuthority` is process-local and cannot serve as a deployed authority.
+- The lab uses `InMemoryAuthority` for isolated runs. The local API uses a durable SQLite authority. The DynamoDB authority has fake-client tests but no live AWS verification.
 - No external services may be provisioned merely to show a course module. Actual deployed service claims require evidence.
 
 ## Work sequence

@@ -38,6 +38,7 @@ class LabResult:
     prevented: bool
     evidence_decision: str
     evidence_integrity: str | None
+    evidence: dict[str, object]
     git_revision: str
     generated_at: str
     notes: tuple[str, ...]
@@ -59,7 +60,9 @@ def run_scenario(dsn: str, scenario: str, mode: str, *, seed: int = 42) -> LabRe
     local_dsn = make_conninfo(dsn, options=f"-c search_path={schema}")
     try:
         migrate(local_dsn)
-        exposure, decision, digest, notes = _execute(local_dsn, dsn, schema, scenario, mode, seed)
+        exposure, decision, digest, evidence, notes = _execute(
+            local_dsn, dsn, schema, scenario, mode, seed
+        )
     finally:
         with psycopg.connect(dsn) as conn:
             conn.execute(f"DROP SCHEMA {schema} CASCADE")
@@ -72,6 +75,7 @@ def run_scenario(dsn: str, scenario: str, mode: str, *, seed: int = 42) -> LabRe
         prevented=not exposure,
         evidence_decision=decision,
         evidence_integrity=digest,
+        evidence=evidence,
         git_revision=_git_revision(),
         generated_at=datetime.now(timezone.utc).isoformat(),
         notes=tuple(notes),
@@ -91,6 +95,7 @@ def _execute(local_dsn, base_dsn, schema, scenario, mode, seed):
     )
     evidence_decision = "NOT_RUN"
     evidence_integrity = None
+    evidence = {}
     notes = []
 
     if scenario == "old_database_recovery":
@@ -107,6 +112,7 @@ def _execute(local_dsn, base_dsn, schema, scenario, mode, seed):
             erasure = ErasureWorkflow(authority, [database]).run(scope, "erase-1")
             evidence_decision = erasure.certificate.decision
             evidence_integrity = erasure.certificate.integrity
+            evidence = asdict(erasure.certificate)
             candidate = PostgresAdapter(candidate_dsn, authority)
             if mode == "protected":
                 recovery = RecoveryWorkflow(authority, [candidate])
@@ -122,7 +128,7 @@ def _execute(local_dsn, base_dsn, schema, scenario, mode, seed):
                     (scope.tenant_id, scope.subject_id),
                 ).fetchone()[0] > 0
             notes.append("Baseline routes raw old candidate; treatment remediates before release")
-            return exposed, evidence_decision, evidence_integrity, notes
+            return exposed, evidence_decision, evidence_integrity, evidence, notes
         finally:
             with psycopg.connect(base_dsn) as conn:
                 conn.execute(f"DROP SCHEMA {candidate_schema} CASCADE")
@@ -133,6 +139,7 @@ def _execute(local_dsn, base_dsn, schema, scenario, mode, seed):
         erasure = ErasureWorkflow(authority, [database]).run(scope, "erase-1")
         evidence_decision = erasure.certificate.decision
         evidence_integrity = erasure.certificate.integrity
+        evidence = asdict(erasure.certificate)
         if mode == "baseline":
             with psycopg.connect(local_dsn) as conn:
                 conn.execute(
@@ -150,7 +157,7 @@ def _execute(local_dsn, base_dsn, schema, scenario, mode, seed):
                 "SELECT count(*) FROM profiles WHERE tenant_id=%s AND subject_id=%s",
                 (scope.tenant_id, scope.subject_id),
             ).fetchone()[0] > 0
-        return exposed, evidence_decision, evidence_integrity, notes
+        return exposed, evidence_decision, evidence_integrity, evidence, notes
 
     version = objects.put(
         scope, f"t01/{scope.subject_id}/g1/doc", b"private blue comet",
@@ -162,6 +169,7 @@ def _execute(local_dsn, base_dsn, schema, scenario, mode, seed):
         erasure = ErasureWorkflow(authority, adapters).run(scope, "erase-1")
         evidence_decision = erasure.certificate.decision
         evidence_integrity = erasure.certificate.integrity
+        evidence = asdict(erasure.certificate)
         if mode == "baseline":
             objects.remove_latest_delete_marker_for_lab(scope, version.key)
             exposed = objects.raw_version_for_lab(version.key, version.version_id) is not None
@@ -169,12 +177,13 @@ def _execute(local_dsn, base_dsn, schema, scenario, mode, seed):
         else:
             exposed = objects.raw_version_for_lab(version.key, version.version_id) is not None
             notes.append("Treatment enumerates and removes known object versions")
-        return exposed, evidence_decision, evidence_integrity, notes
+        return exposed, evidence_decision, evidence_integrity, evidence, notes
 
     if scenario == "index_reingestion":
         erasure = ErasureWorkflow(authority, [database, objects, index]).run(scope, "erase-1")
         evidence_decision = erasure.certificate.decision
         evidence_integrity = erasure.certificate.integrity
+        evidence = asdict(erasure.certificate)
         if mode == "baseline":
             with psycopg.connect(local_dsn) as conn:
                 conn.execute(
@@ -197,6 +206,6 @@ def _execute(local_dsn, base_dsn, schema, scenario, mode, seed):
             exposed = conn.execute(
                 "SELECT count(*) FROM index_chunks WHERE chunk_text ILIKE '%blue comet%'"
             ).fetchone()[0] > 0
-        return exposed, evidence_decision, evidence_integrity, notes
+        return exposed, evidence_decision, evidence_integrity, evidence, notes
 
     raise AssertionError("Scenario dispatch failed")

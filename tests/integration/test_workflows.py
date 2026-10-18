@@ -95,3 +95,18 @@ def test_evidence_digest_detects_change(database):
     ).certificate
     assert cert.verify_integrity()
     assert not replace(cert, decision="HOLD").verify_integrity()
+
+
+def test_erasure_retry_from_validation_is_idempotent():
+    scope = SubjectScope("t01", "p020", 1)
+    authority = InMemoryAuthority()
+    authority.register_subject(scope)
+    objects = VersionedObjectStore(authority)
+    objects.put(scope, "t01/p020/g1/doc", b"synthetic", source_version=1, operation_id="seed")
+    decision = authority.close_admission(scope, "erase-1")
+    authority.commit_erasure(decision.decision_id)
+    authority.advance_decision(decision.decision_id, OperationState.REMEDIATING)
+    authority.advance_decision(decision.decision_id, OperationState.VALIDATING)
+    result = ErasureWorkflow(authority, [objects]).run(scope, "erase-1")
+    assert result.state == OperationState.VERIFIED
+    assert result.certificate.verify_integrity()

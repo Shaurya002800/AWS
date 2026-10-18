@@ -2,6 +2,7 @@ from fastapi.testclient import TestClient
 
 from backend.api.app import create_app
 from backend.eraselock.authority import InMemoryAuthority
+from backend.eraselock.sqlite_authority import SQLiteAuthority
 from contracts.adapter_protocol import SubjectScope
 
 
@@ -50,3 +51,19 @@ def test_api_is_disabled_outside_local_mode(monkeypatch):
     api = client(monkeypatch)
     monkeypatch.setenv("RGX_ENV", "dev")
     assert api.post("/v1/erase-requests", json=body(), headers=headers()).status_code == 503
+
+
+def test_local_api_decision_survives_server_restart(monkeypatch, tmp_path):
+    monkeypatch.setenv("RGX_ENV", "local")
+    monkeypatch.setenv("RGX_LOCAL_API_TOKEN", "test-secret")
+    path = tmp_path / "authority.sqlite3"
+    authority = SQLiteAuthority(path)
+    authority.register_subject(SubjectScope("t01", "p017", 4))
+    first_api = TestClient(create_app(authority))
+    first = first_api.post("/v1/erase-requests", json=body(), headers=headers())
+    assert first.status_code == 202
+    restarted_api = TestClient(create_app(SQLiteAuthority(path)))
+    decision_id = first.json()["decision_id"]
+    assert restarted_api.get(
+        f"/v1/erase-requests/{decision_id}", headers=headers()
+    ).json() == first.json()

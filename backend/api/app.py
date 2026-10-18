@@ -1,4 +1,4 @@
-"""Local-only HTTP surface for the first EraseLock vertical slice.
+"""Local-only HTTP surface for the EraseLock prototype.
 
 This intentionally does not claim production authentication. A real JWT/OIDC
 provider and persistent authority are required before an internet deployment.
@@ -7,9 +7,13 @@ provider and persistent authority are required before an internet deployment.
 from __future__ import annotations
 
 import os
+from dataclasses import asdict
+from pathlib import Path
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from contracts.adapter_protocol import SubjectScope
@@ -23,6 +27,7 @@ from backend.eraselock.domain import (
     NotFound,
     StaleEpoch,
 )
+from lab.runner import SCENARIOS, run_scenario
 
 
 class EraseRequest(BaseModel):
@@ -47,6 +52,12 @@ class LocalPrincipal(BaseModel):
     subject_id: str
 
 
+class LabRunRequest(BaseModel):
+    scenario: str
+    mode: str
+    seed: int = Field(default=42, ge=0, le=999999)
+
+
 def require_local_principal(
     authorization: Annotated[str | None, Header()] = None,
     x_rgx_tenant: Annotated[str | None, Header()] = None,
@@ -65,6 +76,13 @@ def require_local_principal(
 def create_app(authority: InMemoryAuthority | None = None) -> FastAPI:
     app = FastAPI(title="RewindGuard X local API", version="0.1.0")
     app.state.authority = authority or InMemoryAuthority()
+    frontend = Path(__file__).resolve().parents[2] / "frontend"
+    if frontend.is_dir():
+        app.mount("/ui/assets", StaticFiles(directory=frontend), name="ui-assets")
+
+        @app.get("/ui", include_in_schema=False)
+        def user_interface():
+            return FileResponse(frontend / "index.html")
 
     @app.exception_handler(EraseLockError)
     async def erasure_error_handler(_request, error: EraseLockError):
@@ -116,6 +134,24 @@ def create_app(authority: InMemoryAuthority | None = None) -> FastAPI:
             state=decision.state.value,
             authority_epoch=decision.committed_epoch or decision.closed_epoch,
         )
+
+    @app.get("/v1/lab/scenarios")
+    def list_lab_scenarios(
+        _principal: Annotated[LocalPrincipal, Depends(require_local_principal)],
+    ) -> dict[str, tuple[str, ...]]:
+        return {"scenarios": SCENARIOS}
+
+    @app.post("/v1/lab/runs")
+    def run_lab_scenario(
+        payload: LabRunRequest,
+        _principal: Annotated[LocalPrincipal, Depends(require_local_principal)],
+    ) -> dict[str, object]:
+        if payload.scenario not in SCENARIOS or payload.mode not in ("baseline", "protected"):
+            raise HTTPException(status_code=422, detail="Unknown scenario or mode")
+        dsn = os.environ.get("RGX_TEST_POSTGRES_DSN")
+        if not dsn:
+            raise HTTPException(status_code=503, detail="Local PostgreSQL is not configured")
+        return asdict(run_scenario(dsn, payload.scenario, payload.mode, seed=payload.seed))
 
     return app
 

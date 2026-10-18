@@ -137,6 +137,8 @@ class PostgresAdapter:
             ).fetchone()
         if row is None:
             return None
+        if not self.authority.may_read(scope):
+            return None
         return {"display_name": row[0], "source_version": row[1]}
 
     def discover(self, scope: SubjectScope) -> list[Location]:

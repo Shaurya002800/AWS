@@ -122,7 +122,7 @@ class VersionedObjectStore:
                 return None
             for item in versions:
                 if item.scope == scope and item.version_id == version_id and not item.delete_marker:
-                    return item.content
+                    return item.content if self.authority.may_read(scope) else None
         return None
 
     def public_get(self, scope: SubjectScope, key: str) -> bytes | None:
@@ -132,7 +132,7 @@ class VersionedObjectStore:
             versions = self._objects.get(key, [])
             if not versions or versions[-1].delete_marker or versions[-1].scope != scope:
                 return None
-            return versions[-1].content
+            return versions[-1].content if self.authority.may_read(scope) else None
 
     def discover(self, scope: SubjectScope) -> list[Location]:
         with self._lock:

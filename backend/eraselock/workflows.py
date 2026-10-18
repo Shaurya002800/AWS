@@ -63,7 +63,8 @@ class ErasureWorkflow:
                 evidence.append(adapter.verify(scope, committed.committed_epoch))
             except Exception as error:
                 failures.append(f"{adapter.name} verification: {type(error).__name__}")
-        self.authority.advance_decision(decision.decision_id, OperationState.VALIDATING)
+        if self.authority.decision(decision.decision_id).state == OperationState.REMEDIATING:
+            self.authority.advance_decision(decision.decision_id, OperationState.VALIDATING)
         if not failures:
             try:
                 verified = self.authority.verify_decision(

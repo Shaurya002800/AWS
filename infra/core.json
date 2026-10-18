@@ -1,0 +1,67 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Opt-in RewindGuard X synthetic core. Deploy only after account and zero-spend gate.",
+  "Parameters": {
+    "ProjectTag": {
+      "Type": "String",
+      "Default": "rewindguard-x",
+      "AllowedPattern": "[a-z0-9-]+"
+    }
+  },
+  "Resources": {
+    "AuthorityTable": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [{"AttributeName": "pk", "AttributeType": "S"}],
+        "KeySchema": [{"AttributeName": "pk", "KeyType": "HASH"}],
+        "BillingMode": "PAY_PER_REQUEST",
+        "Tags": [{"Key": "Project", "Value": {"Ref": "ProjectTag"}}]
+      }
+    },
+    "DocumentBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "VersioningConfiguration": {"Status": "Enabled"},
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "BlockPublicPolicy": true,
+          "IgnorePublicAcls": true,
+          "RestrictPublicBuckets": true
+        },
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [{
+            "ServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}
+          }]
+        },
+        "OwnershipControls": {"Rules": [{"ObjectOwnership": "BucketOwnerEnforced"}]},
+        "Tags": [{"Key": "Project", "Value": {"Ref": "ProjectTag"}}]
+      }
+    },
+    "DeadLetterQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "MessageRetentionPeriod": 1209600,
+        "SqsManagedSseEnabled": true,
+        "Tags": [{"Key": "Project", "Value": {"Ref": "ProjectTag"}}]
+      }
+    },
+    "ProfileEventQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "VisibilityTimeout": 60,
+        "SqsManagedSseEnabled": true,
+        "RedrivePolicy": {
+          "deadLetterTargetArn": {"Fn::GetAtt": ["DeadLetterQueue", "Arn"]},
+          "maxReceiveCount": 3
+        },
+        "Tags": [{"Key": "Project", "Value": {"Ref": "ProjectTag"}}]
+      }
+    }
+  },
+  "Outputs": {
+    "AuthorityTableName": {"Value": {"Ref": "AuthorityTable"}},
+    "DocumentBucketName": {"Value": {"Ref": "DocumentBucket"}},
+    "ProfileEventQueueUrl": {"Value": {"Ref": "ProfileEventQueue"}},
+    "DeadLetterQueueUrl": {"Value": {"Ref": "DeadLetterQueue"}}
+  }
+}

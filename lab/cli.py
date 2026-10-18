@@ -7,6 +7,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 from lab.runner import SCENARIOS, run_scenario
+from lab.suite import run_suite
 
 
 def main() -> None:
@@ -19,13 +20,18 @@ def main() -> None:
     run.add_argument("--scenario", choices=SCENARIOS, required=True)
     run.add_argument("--mode", choices=("baseline", "protected"), required=True)
     run.add_argument("--seed", type=int, default=42)
+    suite = sub.add_parser("suite")
+    suite.add_argument("--seeds", type=int, nargs="+", default=[42])
     args = parser.parse_args()
     if args.command == "list":
         print("\n".join(SCENARIOS))
         return
     if not args.dsn:
         parser.error("Set RGX_TEST_POSTGRES_DSN or pass --dsn")
-    report = asdict(run_scenario(args.dsn, args.scenario, args.mode, seed=args.seed))
+    if args.command == "suite":
+        report = asdict(run_suite(args.dsn, seeds=tuple(args.seeds)))
+    else:
+        report = asdict(run_scenario(args.dsn, args.scenario, args.mode, seed=args.seed))
     rendered = json.dumps(report, indent=2, sort_keys=True)
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
