@@ -8,6 +8,22 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: rgx
+          POSTGRES_PASSWORD: rgx
+          POSTGRES_DB: rgx
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U rgx -d rgx"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      RGX_TEST_POSTGRES_DSN: postgresql://rgx:rgx@127.0.0.1:55432/rgx
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
