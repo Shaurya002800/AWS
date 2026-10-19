@@ -43,6 +43,18 @@
             "title": "Decision Id",
             "type": "string"
           },
+          "evidence": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence"
+          },
           "request_id": {
             "title": "Request Id",
             "type": "string"
@@ -62,18 +74,6 @@
           "tenant_id": {
             "title": "Tenant Id",
             "type": "string"
-          },
-          "evidence": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Evidence"
           }
         },
         "required": [

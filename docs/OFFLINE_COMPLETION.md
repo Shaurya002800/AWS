@@ -2,8 +2,8 @@
 
 The work in this checkpoint uses no AWS services, credentials, CLI calls, or
 deployment commands. It is a local implementation checkpoint, not completion
-of the entire blueprint. Source was copied from the supplied ZIP; this working
-directory has no Git history or authenticated remote, and nothing was pushed.
+of the entire blueprint. This code was subsequently committed to the shared
+GitHub repository and pulled into the owner's `main` checkout on 19 October 2026.
 
 ## Implemented behavior
 
@@ -80,10 +80,11 @@ wrong-scope evidence, other-subject isolation, forged/expired tokens, evidence
 tampering, incomplete recovery scope, epoch changes, digest mismatch, approval
 reuse, adapter-input injection, and a restore with socket connections forbidden.
 
-The existing FastAPI/PostgreSQL pytest suite must be rerun in an environment
-with its dependencies and local PostgreSQL. Dependency download failed on this
-machine; its old 49-test result is historical, not a current verification claim.
-HTTP tests were updated for the new workflow and signed-session behavior.
+The original Windows copy could not rerun the FastAPI/PostgreSQL pytest suite
+because dependencies were unavailable there. After synchronization, the owner
+ran it against local PostgreSQL on macOS: 70 tests passed. The 19 dependency-free
+acceptance tests and the SQLite offline demo also pass. The generated OpenAPI
+contract was refreshed to match the changed response model.
 
 Remaining: production OIDC/JWT integration; asymmetric/KMS signing and key
 rotation; deployable Lambda packaging and trusted candidate registration;

@@ -1,0 +1,31 @@
+# First-time AWS setup for RewindGuard X
+
+Updated 19 October 2026. The owner requires **zero out-of-pocket paid spend**. This guide separates account setup from project resource deployment. The current repository is **not ready for a full AWS deployment**: `infra/core.json` defines only the DynamoDB table, private versioned S3 bucket, SQS queue, and dead-letter queue. Workflow ARNs, IAM roles, Lambda packaging, RDS restore isolation, and production authentication still need implementation and review.
+
+## Stage 1 — Create and secure the account (do this now)
+
+1. Open the [AWS Free Tier sign-up page](https://aws.amazon.com/free/) and choose **Create a Free Account**. Use an email and password that only the owner controls. Complete the required contact, payment-method, and phone verification steps yourself. AWS says a temporary USD 1 (or equivalent) verification hold may appear for 3–5 days; it is a hold, not a service charge. If AWS says this identity is ineligible for the Free plan, **stop** before selecting Paid. [AWS sign-up](https://docs.aws.amazon.com/accounts/latest/reference/sign-in-new.html), [Free Tier FAQ](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/free-tier-FAQ.html).
+2. Select **Free account plan** and **Basic Support** when offered. The Free plan currently prevents out-of-pocket service charges during its eligible period, but ends after six months or when credits run out, whichever occurs first. Never click **Upgrade plan** for this project without revisiting the zero-spend rule. [AWS plan comparison](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/free-tier-plans.html).
+3. Sign in as the root user once and set up MFA immediately: account menu → **Security credentials** → **Assign MFA device**. Prefer a passkey/security key if available; an authenticator app also works. Save recovery information privately. Do not share the password, MFA code, account ID, or payment details in Git or chat. **Do not create root access keys.** [AWS root MFA instructions](https://docs.aws.amazon.com/IAM/latest/UserGuide/enable-mfa-for-root.html), [root best practices](https://docs.aws.amazon.com/IAM/latest/UserGuide/root-user-best-practices.html).
+4. Do **not** create or join AWS Organizations or enable an organization instance of IAM Identity Center on a Free plan. AWS says creating an organization can automatically upgrade a Free account to Paid and expire its Free Tier credits. We will choose a safe day-to-day access method before connecting a CLI or Codex. [AWS plan comparison](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/free-tier-plans.html), [Identity Center setup](https://docs.aws.amazon.com/singlesignon/latest/userguide/enable-identity-center.html).
+5. In **Billing and Cost Management**, record privately: account plan, remaining credit amount and expiry, Free Tier usage, and whether any charges already appear. Under **Budgets**, create one **Zero spend budget** with email alerts; check **Billing preferences** for Free Tier usage alerts. Budget alerts monitor spending and do not guarantee a hard stop. Avoid paid Budgets Reports or extra action-enabled budgets. [Free Tier tracking](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/tracking-free-tier-usage.html), [Budgets pricing](https://aws.amazon.com/aws-cost-management/aws-budgets/pricing/).
+6. Choose one Region for the project after confirming availability and cost in the console. **Asia Pacific (Mumbai), `ap-south-1`, is a candidate for an India-based owner, not a commitment.** Keep all project resources in that one Region. Record only the Region and non-secret plan facts in `docs/PROJECT_CONFIG.md`.
+
+**Stop after Stage 1.** Send back only: whether AWS shows **Free plan** or **Paid plan**, the chosen Region, whether credits are active and their expiry date, and whether the zero-spend alert is set. Do not send credentials, card details, account ID, or billing screenshots containing private information.
+
+## Stage 2 — Resource deployment (later, after code and account gates)
+
+| Order | Service | Project purpose | Current state |
+| --- | --- | --- | --- |
+| 1 | CloudFormation, IAM | Controlled infrastructure and least-privilege roles | Core template exists; service roles incomplete |
+| 2 | DynamoDB | Independent EraseLock authority | Adapter fake-client tested; no live test |
+| 3 | S3 | Private versioned synthetic documents | Version-aware adapter fake-client tested; no live test |
+| 4 | SQS + dead-letter queue | Delayed/replayed profile events | Worker tested with fake SQS and local PostgreSQL |
+| 5 | RDS PostgreSQL | Live database and isolated old restore | Local PostgreSQL tested; no RDS provisioning/restore code |
+| 6 | Lambda, Step Functions, EventBridge | Cloud execution and recovery events | Offline task boundaries/reference definitions only |
+| 7 | CloudWatch | Scoped operational logs and alarms | Local audit only |
+| 8 | KMS or other signing mechanism | Cloud evidence authentication | Local HMAC only; no KMS signature |
+
+The first four data resources are declared in `infra/core.json`. **Do not deploy it yet.** When the code and account gates are complete, the owner can install AWS CLI v2, use a non-root, short-lived credential method, validate the template, review a CloudFormation change set, and create the stack only if the exact usage remains within the verified zero-spend boundary. The template does not deploy a working cloud application. [AWS CLI installation](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html), [AWS CLI credential prerequisites](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-prereqs.html).
+
+Cost traps to assess before Stage 2: every retained S3 version consumes storage; an RDS instance and restored candidate may consume credits; NAT gateways have hourly and data charges; customer-managed KMS keys have a monthly charge. These must be absent, replaced, or covered by verified account allowances/credits before deployment. [S3 Versioning](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Versioning.html), [RDS Free Tier](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Welcome.html), [VPC pricing](https://aws.amazon.com/vpc/pricing/), [KMS pricing](https://aws.amazon.com/kms/pricing/).

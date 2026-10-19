@@ -12,6 +12,8 @@ RewindGuard X is an AWS course project about preventing erased data from reappea
 
 Start with the [technical blueprint](docs/RewindGuard_X_Complete_Technical_Blueprint.docx), [solo implementation scope](docs/SOLO_IMPLEMENTATION.md), [project configuration](docs/PROJECT_CONFIG.md), and [current status](docs/STATUS.md). The earlier team plan is retained as historical context. Contributor agents should also read [AGENTS.md](AGENTS.md).
 
+For the owner's first AWS account, follow [AWS first-time setup](docs/AWS_FIRST_TIME_SETUP.md). It stops before creating project resources because the cloud application and zero-spend checks are not yet complete.
+
 The working branch is `main` at `https://github.com/Shaurya002800/AWS.git`; the owner requested direct pushes to it. Only the owner connects to the AWS account. The project has a zero out-of-pocket spending rule; all local work runs without AWS credentials.
 
 ## Run the current local slice
@@ -32,21 +34,24 @@ python -m lab.cli suite --seeds 42 43
 
 On this Mac, when using the local binary instead of Docker, run `scripts/local_postgres.sh start` and set `RGX_TEST_POSTGRES_DSN="postgresql://$(whoami)@127.0.0.1:55432/postgres"`. Run `scripts/local_postgres.sh stop` when finished. `python -m lab.cli list` shows all four scenarios. Each run creates temporary PostgreSQL schemas and removes them afterward; `--output path.json` saves a result outside the ignored `lab/reports/` directory if needed.
 
-To start a synthetic local API with subject `t01/p017` generation `4`:
+To start the updated synthetic local API with subject `t01/p017` generation `4`, set two distinct random local keys. On macOS/Linux:
 
 ```bash
 export RGX_ENV=local
-export RGX_LOCAL_API_TOKEN=choose-a-unique-local-value
+export RGX_AUTH_MODE=signed
+export RGX_LOCAL_SIGNING_KEY="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
+export RGX_LOCAL_EVIDENCE_KEY="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
+python -m scripts.local_token --tenant t01 --subject p017
 python -m backend.api.dev_server
 ```
 
-In a second terminal, send a request to `http://127.0.0.1:8000/v1/erase-requests` with `Authorization: Bearer <your-local-value>`, `X-RGX-Tenant: t01`, `X-RGX-Subject: p017`, and JSON body:
+In a second terminal, send a request to `http://127.0.0.1:8000/v1/erase-requests` with `Authorization: Bearer <printed-token>` and JSON body:
 
 ```json
 {"tenant_id":"t01","subject_id":"p017","subject_generation":4,"request_id":"req-1"}
 ```
 
-Open `http://127.0.0.1:8000/ui` for the local lab dashboard. Set `RGX_TEST_POSTGRES_DSN` before starting the server to run lab scenarios from the dashboard. The erase endpoint now runs the configured erasure workflow and returns its verified or held outcome; see the updated checkpoint setup instructions. The token plus identity headers are a **local demo mechanism**, not production authentication; the API rejects requests unless `RGX_ENV=local`. The server authority persists in `.local-authority/authority.sqlite3` by default, outside the recoverable PostgreSQL database. Set `RGX_AUTHORITY_DB` to use a different local path. The generated API contract is in `contracts/api.openapi.json`.
+Open `http://127.0.0.1:8000/ui` for the local lab dashboard. Set `RGX_TEST_POSTGRES_DSN` before starting the server to run lab scenarios from the dashboard. The erase endpoint runs its configured local erasure workflow and returns a verified or held outcome. Signed local sessions are **demo authentication**, not production OIDC; the API rejects requests unless `RGX_ENV=local`. The server stores local authority and adapter data under `.local-authority/` by default. Set `RGX_LOCAL_DIRECTORY` to use a different local path. The generated API contract is in `contracts/api.openapi.json`.
 
 ## Contributor boundary
 

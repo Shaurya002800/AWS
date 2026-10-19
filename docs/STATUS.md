@@ -1,22 +1,23 @@
 # RewindGuard X work status
 
-## Current offline checkpoint (this Windows working copy)
+## Current synchronized checkpoint
 
 See `OFFLINE_COMPLETION.md` for the current implementation and run commands.
 The erase API now invokes the full configured workflow; signed local sessions,
 HMAC evidence envelopes, local task monitoring, dependency-injected handlers,
 and reference workflow definitions are added. Recovery scope omission and stale
-release checks are covered. No AWS services were used and nothing was pushed.
+release checks are covered. No AWS services have been used. The teammate's
+commits `634893f`, `f335da5`, and `328b872` were fast-forwarded into local
+`main` on 19 October 2026.
 
-Current verification: `python -m unittest discover -s tests/offline -v` passes
+Current verification: `python -m unittest discover -s tests/offline -q` passes
 19 acceptance checks. `python -m scripts.offline_demo` observes 3 historic raw
 rows and 0 after reconciliation, VERIFIED erasure, RELEASED candidate, and a
-valid local evidence envelope. `python -m compileall -q backend scripts tests`
-passes. The FastAPI/PostgreSQL pytest suite was NOT rerun: its dependencies and
-local PostgreSQL are unavailable here; dependency downloads failed. Updated
-HTTP tests await that environment. Complete cloud IAM, packaging, RDS route
-switching, production identity, and live evaluation remain pending. The working
-copy came from a ZIP and is not a Git checkout.
+valid local evidence envelope. The full FastAPI/PostgreSQL suite was rerun on
+the owner's Mac: `RGX_TEST_POSTGRES_DSN='postgresql://shaurya@127.0.0.1:55432/postgres' .venv/bin/python -m pytest -q` passed 70 tests. The remote CI failed only its generated OpenAPI check after the teammate's changes; the contract was regenerated locally. Complete cloud IAM, packaging, RDS route
+switching, production identity, and live evaluation remain pending.
+The repository is ready for first-time AWS account security and billing setup,
+but not for deploying the complete application. See `AWS_FIRST_TIME_SETUP.md`.
 
 The status table and test counts below describe the earlier source checkpoint.
 
