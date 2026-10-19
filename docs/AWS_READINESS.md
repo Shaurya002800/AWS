@@ -1,5 +1,13 @@
 # AWS readiness and zero-spend gate
 
+Current offline additions are documented in `OFFLINE_COMPLETION.md`:
+dependency-injected erase/validate/release tasks, reference state machines,
+an invocation policy, local session authentication, HMAC evidence, and local
+audit telemetry. They do not constitute deployed Lambda/Step Functions, service
+IAM policies, OIDC, KMS signatures, or RDS restore routing. The user explicitly
+prohibits using AWS services during this work. All deployment steps below
+remain deferred.
+
 Updated 19 October 2026. The owner asked to finish offline work first. No AWS resources have been deployed or connected. The following steps are for the later owner-led setup; do not run a deploy command before the account plan, Region, active allowances/credits, and resource estimate are verified.
 
 ## Service status

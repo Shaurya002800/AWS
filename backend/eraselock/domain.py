@@ -106,7 +106,7 @@ _TRANSITIONS: dict[OperationState, set[OperationState]] = {
     OperationState.REMEDIATING: {OperationState.VALIDATING, OperationState.EXCEPTION},
     OperationState.VALIDATING: {OperationState.VERIFIED, OperationState.EXCEPTION},
     OperationState.EXCEPTION: {OperationState.REMEDIATING},
-    OperationState.VERIFIED: set(),
+    OperationState.VERIFIED: {OperationState.EXCEPTION},
 }
 
 

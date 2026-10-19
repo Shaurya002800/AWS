@@ -140,6 +140,9 @@ class SQLiteAuthority:
     def may_read(self, scope: SubjectScope) -> bool:
         return self._call("may_read", scope)
 
+    def erased_scopes(self, tenant_id: str) -> list[SubjectScope]:
+        return self._call("erased_scopes", tenant_id)
+
     def acquire_permit(self, scope: SubjectScope, operation_id: str, *, lease_seconds: float = 30.0) -> AdmissionPermit:
         return self._call("acquire_permit", scope, operation_id, lease_seconds=lease_seconds, mutate=True)
 

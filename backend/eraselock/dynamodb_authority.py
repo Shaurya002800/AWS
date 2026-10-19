@@ -17,6 +17,9 @@ from .sqlite_authority import SQLiteAuthority
 class DynamoDBAuthority:
     _KEY = {"pk": {"S": "AUTHORITY#v1"}}
 
+    def erased_scopes(self, tenant_id: str):
+        return self._call("erased_scopes", tenant_id)
+
     def __init__(
         self, client: Any, table_name: str, *, clock: Callable[[], float] = time,
         max_conflicts: int = 8,

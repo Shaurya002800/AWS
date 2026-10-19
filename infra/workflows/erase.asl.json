@@ -1,0 +1,13 @@
+{
+  "Comment": "Offline reference only. Bind EraseTaskArn to a configured handler before deployment.",
+  "StartAt": "EraseAndVerify",
+  "States": {
+    "EraseAndVerify": {"Type": "Task", "Resource": "${EraseTaskArn}", "Next": "CheckOutcome",
+      "Catch": [{"ErrorEquals": ["States.ALL"], "Next": "Hold"}]},
+    "CheckOutcome": {"Type": "Choice", "Choices": [
+      {"Variable": "$.state", "StringEquals": "VERIFIED", "Next": "Verified"}
+    ], "Default": "Hold"},
+    "Verified": {"Type": "Succeed"},
+    "Hold": {"Type": "Fail", "Error": "ErasureHeld", "Cause": "Do not bypass unresolved checks"}
+  }
+}

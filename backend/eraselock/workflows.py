@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from hashlib import sha256
 
 from backend.eraselock.authority import InMemoryAuthority
-from backend.eraselock.domain import EvidenceIncomplete, OperationState, RecoveryApproval
+from backend.eraselock.domain import EvidenceIncomplete, OperationState, RecoveryApproval, evidence_satisfies_release
 from backend.eraselock.evidence import EvidenceCertificate, certificate_for
 from contracts.adapter_protocol import AdapterEvidence, DataAdapter, SubjectScope
 
@@ -33,15 +33,24 @@ class ErasureWorkflow:
     def run(self, scope: SubjectScope, request_id: str) -> ErasureOutcome:
         decision = self.authority.close_admission(scope, request_id)
         if decision.state == OperationState.VERIFIED:
-            evidence = [
-                adapter.verify(scope, decision.committed_epoch) for adapter in self.adapters
-            ]
-            satisfied = all(item.satisfies_required_check() for item in evidence)
+            evidence = []
+            failures = []
+            for adapter in self.adapters:
+                try:
+                    evidence.append(adapter.verify(scope, decision.committed_epoch))
+                except Exception as error:
+                    failures.append(f"{adapter.name} verification: {type(error).__name__}")
+            satisfied = not failures and evidence_satisfies_release(
+                evidence, {(adapter.name, scope) for adapter in self.adapters}, decision.committed_epoch
+            )
+            if not satisfied:
+                self.authority.advance_decision(decision.decision_id, OperationState.EXCEPTION)
             certificate = certificate_for(
                 f"{scope.tenant_id}/{scope.subject_id}/g{scope.subject_generation}",
                 decision.committed_epoch,
                 "PASS" if satisfied else "HOLD",
                 evidence,
+                failures,
             )
             return ErasureOutcome(
                 decision.decision_id,
@@ -116,6 +125,9 @@ class RecoveryWorkflow:
         if not erased_scopes or any(scope.tenant_id != tenant_id for scope in erased_scopes):
             raise ValueError("Candidate needs known erased scopes for its tenant")
         epoch = self.authority.epoch(tenant_id)
+        known = self.authority.erased_scopes(tenant_id)
+        if len(set(erased_scopes)) != len(erased_scopes) or set(erased_scopes) != set(known):
+            raise EvidenceIncomplete("Recovery scope must cover every authoritative erased generation")
         scope_digest = "sha256:" + sha256(
             (candidate_id + "|" + "|".join(sorted(
                 f"{s.tenant_id}:{s.subject_id}:{s.subject_generation}" for s in erased_scopes

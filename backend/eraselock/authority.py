@@ -82,6 +82,13 @@ class InMemoryAuthority:
     def may_read(self, scope: SubjectScope) -> bool:
         return self.state(scope) == ControlState.ACTIVE
 
+    def erased_scopes(self, tenant_id: str) -> list[SubjectScope]:
+        """Authoritative recovery coverage, never supplied by a request caller."""
+        with self._lock:
+            return [scope for scope, state in self._control.items()
+                    if scope.tenant_id == tenant_id and state in
+                    (ControlState.ERASE_COMMITTED, ControlState.RESTRICTED)]
+
     def acquire_permit(
         self, scope: SubjectScope, operation_id: str, *, lease_seconds: float = 30.0
     ) -> AdmissionPermit:

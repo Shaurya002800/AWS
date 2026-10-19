@@ -1,5 +1,25 @@
 # RewindGuard X work status
 
+## Current offline checkpoint (this Windows working copy)
+
+See `OFFLINE_COMPLETION.md` for the current implementation and run commands.
+The erase API now invokes the full configured workflow; signed local sessions,
+HMAC evidence envelopes, local task monitoring, dependency-injected handlers,
+and reference workflow definitions are added. Recovery scope omission and stale
+release checks are covered. No AWS services were used and nothing was pushed.
+
+Current verification: `python -m unittest discover -s tests/offline -v` passes
+19 acceptance checks. `python -m scripts.offline_demo` observes 3 historic raw
+rows and 0 after reconciliation, VERIFIED erasure, RELEASED candidate, and a
+valid local evidence envelope. `python -m compileall -q backend scripts tests`
+passes. The FastAPI/PostgreSQL pytest suite was NOT rerun: its dependencies and
+local PostgreSQL are unavailable here; dependency downloads failed. Updated
+HTTP tests await that environment. Complete cloud IAM, packaging, RDS route
+switching, production identity, and live evaluation remain pending. The working
+copy came from a ZIP and is not a Git checkout.
+
+The status table and test counts below describe the earlier source checkpoint.
+
 Updated: 19 October 2026. Solo implementation supersedes the former team split; see `SOLO_IMPLEMENTATION.md`.
 
 | Milestone | Owner | Status | Branch or PR | Evidence / next action |

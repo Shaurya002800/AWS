@@ -62,6 +62,18 @@
           "tenant_id": {
             "title": "Tenant Id",
             "type": "string"
+          },
+          "evidence": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence"
           }
         },
         "required": [

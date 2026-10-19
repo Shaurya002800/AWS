@@ -6,6 +6,7 @@ from backend.api.app import create_app
 def test_local_dashboard_and_lab_endpoint(database, monkeypatch):
     base, _schema, _dsn = database
     monkeypatch.setenv("RGX_ENV", "local")
+    monkeypatch.setenv("RGX_AUTH_MODE", "demo")
     monkeypatch.setenv("RGX_LOCAL_API_TOKEN", "local-test")
     monkeypatch.setenv("RGX_TEST_POSTGRES_DSN", base)
     api = TestClient(create_app())

@@ -1,0 +1,16 @@
+{
+  "Comment": "Offline reference only; validation must use isolated candidate adapters.",
+  "StartAt": "ValidateCandidate",
+  "States": {
+    "ValidateCandidate": {"Type": "Task", "Resource": "${ValidateTaskArn}", "Next": "CheckApproval",
+      "Catch": [{"ErrorEquals": ["States.ALL"], "Next": "Hold"}]},
+    "CheckApproval": {"Type": "Choice", "Choices": [
+      {"Variable": "$.approved", "BooleanEquals": true, "Next": "ReleaseAtCurrentEpoch"}
+    ], "Default": "Hold"},
+    "ReleaseAtCurrentEpoch": {"Type": "Task", "Resource": "${ReleaseTaskArn}",
+      "Parameters": {"candidate_id.$": "$.candidate_id", "scope_digest.$": "$.scope_digest"},
+      "Next": "Released", "Catch": [{"ErrorEquals": ["States.ALL"], "Next": "Hold"}]},
+    "Released": {"Type": "Succeed"},
+    "Hold": {"Type": "Fail", "Error": "RecoveryHeld", "Cause": "Candidate remains quarantined"}
+  }
+}
