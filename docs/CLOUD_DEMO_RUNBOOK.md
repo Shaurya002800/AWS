@@ -43,11 +43,12 @@ Stopped RDS instances still occupy instance slots. This project encountered a tw
 Free plan limit on the owner’s repeat recovery run. The capacity guard now holds before
 snapshot/erasure if both slots are occupied. Do not upgrade to Paid.
 
-The superseded synthetic original database can be previewed with
+The superseded synthetic original database was previewed with
 `python -m scripts.retire_original_database`. It preserves the published candidate.
-Only after explicit owner confirmation, `--execute` updates CloudFormation to remove
-the original permanently without a final snapshot. The retained-database parameter
-defaults to true, so ordinary deployments preserve it. Existing completed evidence
+After explicit owner confirmation, `--execute` updated CloudFormation to remove
+the original permanently without a final snapshot. The original is now retired; this one-time step does not need to be rerun.
+The retained-database parameter defaults to true for new stacks, and updates
+preserve the owner-selected false value. Existing completed evidence
 is in FINAL_CLOUD_EVALUATION.md; a held run must never be presented as a success.
 
 After successful publication, cleanup reclaims the previously published disposable

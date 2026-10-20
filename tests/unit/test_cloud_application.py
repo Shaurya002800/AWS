@@ -258,3 +258,19 @@ def test_cleanup_role_can_read_candidate_release_records_without_writing_them():
     statements=template()['Resources']['CleanupRole']['Properties']['Policies'][0]['PolicyDocument']['Statement']
     control=next(s for s in statements if s.get('Condition',{}).get('ForAllValues:StringLike',{}).get('dynamodb:LeadingKeys')==['ACTIVE','CANDIDATE#*'])
     assert control['Action']==['dynamodb:GetItem']
+
+
+def test_cleanup_rechecks_active_pointer_before_deleting_candidate(monkeypatch):
+    from backend.cloud import cleanup
+    from unittest.mock import MagicMock
+    rds=MagicMock(); candidate='rgx-candidate-new'
+    def pages(kind):
+        p=MagicMock();p.paginate.return_value=[{'DBInstances':[{'DBInstanceIdentifier':candidate,'DBInstanceArn':candidate,'DBInstanceStatus':'available'}]}] if kind=='describe_db_instances' else [{'DBSnapshots':[]}]
+        return p
+    rds.get_paginator.side_effect=pages
+    rds.list_tags_for_resource.return_value={'TagList':[{'Key':'Project','Value':'rewindguard-x'},{'Key':'Disposable','Value':'true'},{'Key':'ExpiresAt','Value':'9999999999'}]}
+    monkeypatch.setattr(cleanup,'client',lambda _:rds)
+    records=iter([{'db_id':'rgx-candidate-old'},{'status':'RELEASED'},{'db_id':candidate}])
+    monkeypatch.setattr(cleanup,'get_record',lambda _:next(records))
+    cleanup.handler({},None)
+    rds.delete_db_instance.assert_not_called()

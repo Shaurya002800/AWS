@@ -29,6 +29,10 @@ def handler(event,context):
                 rds.stop_db_instance(DBInstanceIdentifier=name)
                 results.append({'kind':'idle_serving_database_stopped'})
             elif name.startswith('rgx-candidate-') and tags.get('Disposable')=='true' and state in {'available','stopped'}:
+                # Publication can advance while a cleanup pass is running.
+                # Re-read the pointer after observing a RELEASED record.
+                latest=get_record('ACTIVE')
+                if not latest or latest.get('db_id')==name: continue
                 rds.delete_db_instance(DBInstanceIdentifier=name,SkipFinalSnapshot=True,DeleteAutomatedBackups=True)
                 results.append({'kind':'superseded_candidate_deleted' if retired else 'expired_candidate_deleted'})
             elif name=='rgx-live' and state=='available':

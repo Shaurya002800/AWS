@@ -13,7 +13,7 @@
 | Real snapshot recovery evaluation | All 15 checks passed; target profile/document/index counts changed from 1/1/1 to 0/0/0 |
 | Signed evidence | Real KMS verification and tamper rejection passed |
 | Cost controls | Free plan active; no USD 25 minimum; on-demand 30-minute serving window; superseded original retired with owner approval; disposable snapshots removed |
-| Local test suite | 99 passed + 7 frontend checks; 16 PostgreSQL tests require a local DSN and are exercised by CI's PostgreSQL service |
+| Local test suite | 100 passed + 7 frontend checks; 16 PostgreSQL tests require a local DSN and are exercised by CI's PostgreSQL service |
 
 See the [actual cloud evaluation](docs/FINAL_CLOUD_EVALUATION.md), [demo start/sign-in/stop runbook](docs/CLOUD_DEMO_RUNBOOK.md), and [detailed status](docs/STATUS.md).
 Fresh recovery runs require one free RDS slot; two occupied slots caused the owner’s repeat run to be held. The new guard blocks before snapshot/erasure. The owner approved retirement of the superseded original; it is now removed. Superseded disposable candidates are reclaimed after replacement.

@@ -7,13 +7,19 @@ CloudFormation completed removal with RetainOriginalDatabase=false, preserving
 the published candidate and signed evidence. The repeated full evaluation passed all 15 checks in 462.77 seconds,
 run 54008557ae134b2c807e18d38fa79ce1. Raw counts changed from 1/1/1 to 0/0/0;
 KMS verification and tamper rejection passed. A post-run cleanup read permission
-was corrected and regression-covered; operational cleanup and review restart
-are being verified separately.
+was corrected and regression-covered. Final verification at 14:35 UTC confirmed
+UPDATE_COMPLETE, bootstrap disabled, exactly one approved database available,
+one restore slot free, zero disposable snapshots, and FREE/ACTIVE with positive
+credits. All nine additional current-serving checks passed at 14:34 UTC, including
+a real SQL read, verified erasure, KMS verification and tamper rejection.
+The review window expires at 15:04 UTC, with cleanup polling every 30 minutes.
 Cleanup now reclaims non-active disposable candidates with trusted RELEASED
 records, including stopped candidates, without waiting for their idle expiry.
 Successful publication requests asynchronous cleanup; the schedule retries it.
 The active candidate and an unexpired isolated candidate remain protected.
-Validation: 99 Python tests passed, 16 local PostgreSQL skips, seven frontend checks.
+Cleanup re-reads ACTIVE before deletion to protect publication during a cleanup pass.
+Future deployments preserve original retirement and disabled bootstrap networking.
+Validation: 100 Python tests passed, 16 local PostgreSQL skips, seven frontend checks.
 
 
 ## Repeat-run capacity correction — 20 October 2026

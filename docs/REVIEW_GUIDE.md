@@ -3,7 +3,8 @@
 [Open the live demo](https://es3l5u1w1c.execute-api.ap-southeast-2.amazonaws.com/ui).
 The completed synthetic evaluation is available for review. Fresh full recovery runs
 require a free RDS instance slot; stopped instances also occupy slots. The original
-was retired with owner approval, and the repeat run passed all 15 checks. Authentication, private
+was retired with owner approval, and the repeat run passed all 15 checks. Final
+verification found one approved database and one free restore slot. Authentication, private
 PostgreSQL, Lambda, Step Functions, DynamoDB, S3, SQS, KMS and monitoring are deployed
 in ap-southeast-2. This is a research demonstration, not production certification.
 
@@ -58,7 +59,7 @@ promise of zero credit usage.
 ## Verified results and boundaries
 
 - Full snapshot/erase/restore evaluation: all 15 checks passed; see FINAL_CLOUD_EVALUATION.md.
-- Current serving database, 13:36 UTC: all nine additional live checks passed:
+- Current serving database, 14:34 UTC: all nine additional live checks passed:
   authenticated operator; real seed/index/profile read; verified erasure; valid KMS
   signature; tamper rejection; erased profile unavailable; cross-tenant denial;
   no remaining erased object versions. Temporary test login removed afterward.
