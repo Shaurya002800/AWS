@@ -1,6 +1,6 @@
 # Full cloud deployment checkpoint
 
-Prepared on 20 October 2026. The core DynamoDB/S3/SQS stack is live and verified. The expanded application described here has not been uploaded or deployed. Automatic approval review requires explicit authorization to send the new template and code bundle to AWS.
+Deployed on 20 October 2026 after explicit direct-Python authorization. The core DynamoDB/S3/SQS stack is live and verified, and the expanded stack reached CREATE_COMPLETE. Real cloud evaluation is running; consult STATUS.md and the observed final report for the current checkpoint.
 
 ## Prepared components
 
@@ -33,4 +33,4 @@ The evaluator creates a temporary synthetic Cognito user without sending message
 
 The template passes local cfn-lint for ap-southeast-2. Local unit tests cover JWT authorization, tenant boundaries, KMS envelope tampering, private network separation, conditional master-secret bootstrap access, workflow holds, and preservation of the active restored database during cleanup. The real PostgreSQL tests require a local test DSN and are skipped in this environment.
 
-No expanded-stack end-to-end result, real KMS signature, RDS restore duration, final cost measurement, or production certification is claimed. The existing live core smoke test uses local operational records and a local HMAC signature. Do not substitute those results for full cloud evaluation.
+Until real-cloud evaluation succeeds, no expanded-stack end-to-end result, real KMS signature, RDS restore duration, final cost measurement, or production certification is claimed. The existing live core smoke test uses local operational records and a local HMAC signature. Do not substitute those results for full cloud evaluation.

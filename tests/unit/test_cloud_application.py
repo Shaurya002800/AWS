@@ -120,3 +120,26 @@ def test_free_plan_guard_accepts_small_positive_balance_and_rejects_paid(monkeyp
     for invalid in ({**state,'accountPlanType':'PAID'}, {**state,'accountPlanStatus':'EXPIRED'}, {**state,'accountPlanRemainingCredits':{'unit':'USD','amount':0}}):
         service.get_account_plan_state.return_value=invalid
         with pytest.raises(RuntimeError): deploy.free_guard(None)
+
+
+def test_immutable_seed_create_does_not_head_missing_key():
+    from backend.cloud.data import immutable_seed_object
+    from unittest.mock import MagicMock
+    client=MagicMock()
+    client.put_object.return_value={'VersionId':'v1'}
+    assert immutable_seed_object(client,'bucket','synthetic/key',b'data')=='v1'
+    assert client.put_object.call_args.kwargs['IfNoneMatch']=='*'
+    client.head_object.assert_not_called()
+
+
+def test_immutable_seed_retry_requires_matching_content():
+    from backend.cloud.data import immutable_seed_object
+    from backend.eraselock.domain import Conflict
+    from botocore.exceptions import ClientError
+    from hashlib import sha256
+    from unittest.mock import MagicMock
+    client=MagicMock()
+    client.put_object.side_effect=ClientError({'Error':{'Code':'PreconditionFailed'}},'PutObject')
+    client.head_object.return_value={'VersionId':'v1','Metadata':{'content-sha256':sha256(b'data').hexdigest()}}
+    assert immutable_seed_object(client,'bucket','synthetic/key',b'data')=='v1'
+    with pytest.raises(Conflict): immutable_seed_object(client,'bucket','synthetic/key',b'changed')

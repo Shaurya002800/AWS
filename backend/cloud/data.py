@@ -6,6 +6,7 @@ from pathlib import Path
 from hashlib import sha256
 
 import psycopg
+from botocore.exceptions import ClientError
 from psycopg.conninfo import make_conninfo
 
 from backend.cloud.common import client,authority,identifier,success
@@ -57,6 +58,23 @@ def bootstrap(event,context):
     return success({'migrated':True,'iam_database_users':True})
 
 
+
+def immutable_seed_object(s3,bucket,key,content):
+    # Missing keys can return 403 to a principal without ListBucket. Create
+    # conditionally first; inspect metadata only for an existing immutable key.
+    try:
+        result=s3.put_object(Bucket=bucket,Key=key,Body=content,
+                    Metadata={'content-sha256':sha256(content).hexdigest()},IfNoneMatch='*')
+        return result['VersionId']
+    except ClientError as error:
+        if error.response['Error']['Code'] not in {'412','PreconditionFailed'}:
+            raise
+    prior=s3.head_object(Bucket=bucket,Key=key)
+    if prior.get('Metadata',{}).get('content-sha256')!=sha256(content).hexdigest():
+        raise Conflict('Synthetic object operation has different content')
+    return prior['VersionId']
+
+
 def handler(event,context):
     action=event.get('action')
     allowed={'seed','profile','upsert','remediate','verify','reconcile','oracle','search'}
@@ -95,17 +113,7 @@ def handler(event,context):
         key=objects.prefix(scope)+'document_'+request
         content=b'Synthetic RewindGuard cloud index document'
         permit=auth.acquire_permit(scope,'object_'+request)
-        try:
-            prior=objects.client.head_object(Bucket=objects.bucket,Key=key)
-            if prior.get('Metadata',{}).get('content-sha256')!=sha256(content).hexdigest():
-                raise Conflict('Synthetic object operation has different content')
-            version=prior['VersionId']
-        except objects.client.exceptions.ClientError as error:
-            if error.response['Error']['Code'] not in {'404','NoSuchKey','NotFound'}:
-                raise
-            result=objects.client.put_object(Bucket=objects.bucket,Key=key,Body=content,
-                         Metadata={'content-sha256':sha256(content).hexdigest()},IfNoneMatch='*')
-            version=result['VersionId']
+        version=immutable_seed_object(objects.client,objects.bucket,key,content)
         auth.close_permit(permit.permit_id,outcome='COMMITTED',journal_confirmed=True)
         index.index_object(scope,key=key,version_id=version,document_id='doc_'+request,
                            source_version=1,operation_id='index_'+request)

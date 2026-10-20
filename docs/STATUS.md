@@ -1,5 +1,24 @@
 # RewindGuard X work status
 
+## Live cloud application deployed; evaluation running (20 October 2026)
+
+The owner explicitly authorized direct Python deployment. Stack rewindguard-x-app
+reached CREATE_COMPLETE in ap-southeast-2. Private encrypted PostgreSQL 17.11
+schema initialization and IAM database-user setup succeeded. Hosted health,
+page, JavaScript and stylesheet returned HTTP 200. Bootstrap endpoint deletion
+completed; bootstrap Lambda deletion is still finishing in CloudFormation.
+
+An initial synthetic seed failed because S3 HeadObject returns 403 for a missing
+key without ListBucket. Conditional immutable creation fixes that without adding
+permissions. Twelve cloud-specific tests and the full suite (76 passed, 16 local
+PostgreSQL skips) pass. The interrupted seed was replayed with its original
+operation ID against AWS and succeeded. The full snapshot/erase/restore evaluation
+is running; no successful full-recovery result or final bill is claimed yet.
+Immediate database stop and disposable snapshot cleanup are attached to evaluation.
+See CLOUD_DEMO_RUNBOOK.md for operator setup and demo start/stop commands.
+
+Earlier checkpoint notes below are historical.
+
 ## Lowest-credit configuration prepared (20 October 2026)
 
 The owner authorized removing the USD 25 minimum and minimizing credits.

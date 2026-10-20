@@ -66,7 +66,7 @@ Small-sample p95 is descriptive, not a throughput benchmark.
 The Free-plan API was checked before and after the run. Remaining credits are
 kept privately with the raw evidence. Difference observed during the run:
 {result.get('observed_credit_delta_usd')} USD. This is not a final bill: metering
-and credits can be delayed. Resource runtime/storage/request measurements are
+and credits can be delayed. Database configuration, workflow duration, and sampled request latencies are
 recorded in private evidence. No claim of an exact finalized charge is made.
 The project must remain on the Free plan for the owner's zero-out-of-pocket
 requirement. There is no fixed credit reserve. A two-hour idle safety fallback remains;
