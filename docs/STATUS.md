@@ -1,5 +1,25 @@
 # RewindGuard X work status
 
+## 20 October 2026 local checkpoint
+
+Recovery task validation and release now require a host-supplied candidate ID
+binding. A live runtime cannot approve or release a recovery candidate, and a
+request cannot substitute another candidate ID. The offline restore demo uses
+candidate-scoped adapters with that binding. The independent authority still
+checks approval digest, epoch, and reuse at release. This task-boundary check
+does not itself prove cloud network isolation or candidate identity; those
+remain deployment gates.
+
+Verification: `python3 -m unittest discover -s tests/offline -q` passed 21
+checks; `python3 -m scripts.offline_demo` observed 3 old raw rows, 0 after
+reconciliation, and a RELEASED candidate; local PostgreSQL integration with
+`RGX_TEST_POSTGRES_DSN='postgresql://shaurya@127.0.0.1:55432/postgres'
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q` passed 72 tests.
+No AWS services were called. An advanced AWS account reached root/MFA setup,
+but payment verification and active Free-plan/credit confirmation remain
+incomplete. The first Builder ID project had an address-verification failure.
+See `AWS_FIRST_TIME_SETUP.md`; do not deploy resources yet.
+
 ## Current synchronized checkpoint
 
 See `OFFLINE_COMPLETION.md` for the current implementation and run commands.

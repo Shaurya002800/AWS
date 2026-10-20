@@ -2,14 +2,11 @@
 import json
 import secrets
 import sqlite3
-import tempfile
 from contextlib import closing
 from dataclasses import asdict
-from pathlib import Path
 from time import perf_counter
-from backend.local_runtime import local_runtime, temporary_local_directory
-from backend.adapters.sqlite_local import SQLiteLocalAdapter
-from backend.orchestration.handlers import WorkflowTasks
+from backend.local_runtime import (create_local_candidate_snapshot, local_candidate_runtime,
+                                   local_runtime, temporary_local_directory)
 from contracts.adapter_protocol import SubjectScope
 
 
@@ -20,16 +17,13 @@ def demo():
         tasks.authority.register_subject(scope)
         for i, adapter in enumerate(tasks.adapters):
             adapter.put(scope, "document", 1, "synthetic content", f"seed-{i}")
-        snapshot = Path(directory) / "candidate.sqlite3"
-        with closing(sqlite3.connect(Path(directory) / "data.sqlite3")) as live, closing(sqlite3.connect(snapshot)) as candidate:
-            live.backup(candidate)
+        snapshot = create_local_candidate_snapshot(directory, "offline-restore")
         start = perf_counter()
         erased = tasks.erase({"scope": asdict(scope), "request_id": "erase-demo"})
         duration = perf_counter() - start
         with closing(sqlite3.connect(snapshot)) as conn:
             baseline_count = conn.execute("SELECT count(*) FROM local_data").fetchone()[0]
-        adapters = [SQLiteLocalAdapter(snapshot, tasks.authority, a.name) for a in tasks.adapters]
-        restore = WorkflowTasks(tasks.authority, adapters, tasks.signer)
+        restore = local_candidate_runtime(directory, "offline-restore", tasks.signer.key)
         approved = restore.validate({"candidate_id": "offline-restore", "tenant_id": scope.tenant_id})
         released = restore.release({"candidate_id": approved["candidate_id"], "scope_digest": approved["scope_digest"]})
         with closing(sqlite3.connect(snapshot)) as conn:

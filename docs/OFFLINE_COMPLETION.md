@@ -30,8 +30,10 @@ GitHub repository and pulled into the owner's `main` checkout on 19 October 2026
   existing PostgreSQL/object simulator/index adapters remain available.
 - Dependency-injected callable tasks implement erase, validate, and release.
   They never initialize an AWS SDK. Task inputs cannot select adapters or
-  connection targets. Candidate validation tasks must be constructed with
-  candidate-scoped adapters, never live-store adapters.
+  connection targets. Candidate validation and release now require a trusted
+  candidate ID binding; the ordinary live runtime refuses both operations.
+  Hosts must still construct candidate tasks with candidate-scoped adapters,
+  never live-store adapters.
 - Local task audit counts and durations survive restart and omit request data.
   Reference state machines hold on failure and use a final epoch-checked release.
   The invocation policy restricts calls to the three configured task ARNs.
@@ -78,11 +80,12 @@ The dependency-free acceptance suite checks full deletion, restart/retry,
 unresolved permits, stale replay, adapter failure/retry, re-verification failure,
 wrong-scope evidence, other-subject isolation, forged/expired tokens, evidence
 tampering, incomplete recovery scope, epoch changes, digest mismatch, approval
-reuse, adapter-input injection, and a restore with socket connections forbidden.
+reuse, adapter-input injection, candidate substitution, live-runtime recovery
+rejection, and a restore with socket connections forbidden.
 
 The original Windows copy could not rerun the FastAPI/PostgreSQL pytest suite
 because dependencies were unavailable there. After synchronization, the owner
-ran it against local PostgreSQL on macOS: 70 tests passed. The 19 dependency-free
+ran it against local PostgreSQL on macOS: 72 tests passed. The 21 dependency-free
 acceptance tests and the SQLite offline demo also pass. The generated OpenAPI
 contract was refreshed to match the changed response model.
 

@@ -26,9 +26,14 @@ def observed(task):
 
 
 class WorkflowTasks:
-    def __init__(self, authority, adapters, signer, audit=None):
+    def __init__(self, authority, adapters, signer, audit=None, *, candidate_id=None):
+        if candidate_id is not None and (not isinstance(candidate_id, str) or not candidate_id):
+            raise ValueError("A candidate binding needs a nonempty ID")
         self.authority, self.adapters, self.signer = authority, adapters, signer
         self.audit = audit
+        # Only a host-constructed candidate task may validate recovery. The
+        # event cannot choose a database path, adapter list, or candidate ID.
+        self.candidate_id = candidate_id
         self.erasure = ErasureWorkflow(authority, adapters)
 
     @observed
@@ -50,7 +55,8 @@ class WorkflowTasks:
     def validate(self, event, context=None):
         if set(event) != {"candidate_id", "tenant_id"}:
             raise ValueError("Unexpected recovery input")
-        # This task object must be constructed with candidate-scoped adapters.
+        if self.candidate_id is None or event["candidate_id"] != self.candidate_id:
+            raise ValueError("Recovery candidate does not match trusted adapter binding")
         workflow = RecoveryWorkflow(self.authority, self.adapters)
         outcome = workflow.validate_candidate(event["candidate_id"], event["tenant_id"],
                                               self.authority.erased_scopes(event["tenant_id"]))
@@ -62,6 +68,8 @@ class WorkflowTasks:
     def release(self, event, context=None):
         if set(event) != {"candidate_id", "scope_digest"}:
             raise ValueError("Unexpected release input")
+        if self.candidate_id is None or event["candidate_id"] != self.candidate_id:
+            raise ValueError("Recovery candidate does not match trusted adapter binding")
         # Authority reloads persisted approval; never trust an 'approved' input.
         return asdict(self.authority.release_recovery(
             event["candidate_id"], expected_scope_digest=event["scope_digest"]))

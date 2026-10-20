@@ -7,12 +7,11 @@ from dataclasses import asdict, replace
 from pathlib import Path
 from unittest.mock import patch
 
-from backend.local_runtime import local_runtime, temporary_local_directory
-from backend.adapters.sqlite_local import SQLiteLocalAdapter
+from backend.local_runtime import (create_local_candidate_snapshot, local_candidate_runtime,
+                                   local_runtime, temporary_local_directory)
 from backend.eraselock.domain import AdmissionClosed, Conflict, EvidenceIncomplete, InflightUnresolved, StaleEpoch
 from backend.eraselock.local_security import LocalEvidenceSigner, issue_token, verify_token
 from backend.eraselock.workflows import RecoveryWorkflow
-from backend.orchestration.handlers import WorkflowTasks
 from contracts.adapter_protocol import SubjectScope
 from scripts.offline_demo import demo
 
@@ -28,6 +27,8 @@ class OfflineAcceptance(unittest.TestCase):
         self.tasks.authority.register_subject(self.scope)
         for i, adapter in enumerate(self.tasks.adapters):
             adapter.put(self.scope, "doc", 1, "synthetic", f"seed-{i}")
+        create_local_candidate_snapshot(self.root, "restore")
+        self.candidate_tasks = local_candidate_runtime(self.root, "restore", self.key)
 
     def erase(self):
         return self.tasks.erase({"scope": asdict(self.scope), "request_id": "erase-1"})
@@ -139,22 +140,44 @@ class OfflineAcceptance(unittest.TestCase):
 
     def test_release_rechecks_current_epoch(self):
         self.erase()
-        approval = self.tasks.validate({"candidate_id": "restore", "tenant_id": "tenant"})
+        approval = self.candidate_tasks.validate({"candidate_id": "restore", "tenant_id": "tenant"})
         other = SubjectScope("tenant", "other", 1)
         self.tasks.authority.register_subject(other)
         self.tasks.authority.close_admission(other, "erase-new")
         with self.assertRaises(StaleEpoch):
-            self.tasks.release({"candidate_id": "restore", "scope_digest": approval["scope_digest"]})
+            self.candidate_tasks.release({"candidate_id": "restore", "scope_digest": approval["scope_digest"]})
 
     def test_release_rejects_forged_digest_and_reuse(self):
         self.erase()
-        approval = self.tasks.validate({"candidate_id": "restore", "tenant_id": "tenant"})
+        approval = self.candidate_tasks.validate({"candidate_id": "restore", "tenant_id": "tenant"})
         with self.assertRaises(Conflict):
-            self.tasks.release({"candidate_id": "restore", "scope_digest": "forged"})
+            self.candidate_tasks.release({"candidate_id": "restore", "scope_digest": "forged"})
         event = {"candidate_id": "restore", "scope_digest": approval["scope_digest"]}
-        self.assertEqual(self.tasks.release(event)["state"], "RELEASED")
+        self.assertEqual(self.candidate_tasks.release(event)["state"], "RELEASED")
         with self.assertRaises(Conflict):
-            self.tasks.release(event)
+            self.candidate_tasks.release(event)
+
+    def test_recovery_task_cannot_validate_live_or_substitute_candidate(self):
+        self.erase()
+        event = {"candidate_id": "restore", "tenant_id": "tenant"}
+        with self.assertRaises(ValueError):
+            self.tasks.validate(event)
+        with self.assertRaises(ValueError):
+            self.candidate_tasks.validate({**event, "candidate_id": "another-restore"})
+        with self.assertRaises(ValueError):
+            self.tasks.release({"candidate_id": "restore", "scope_digest": "forged"})
+        self.assertEqual(len(self.candidate_tasks.adapters[0].discover(self.scope)), 1)
+        approval = self.candidate_tasks.validate(event)
+        self.assertTrue(approval["approved"])
+        self.assertEqual(self.candidate_tasks.adapters[0].discover(self.scope), [])
+
+    def test_candidate_runtime_rejects_missing_and_live_store_paths(self):
+        with self.assertRaises(FileNotFoundError):
+            local_candidate_runtime(self.root, "missing", self.key)
+        with self.assertRaises(ValueError):
+            local_candidate_runtime(self.root, "../data", self.key)
+        with self.assertRaises(FileExistsError):
+            create_local_candidate_snapshot(self.root, "restore")
 
     def test_request_cannot_replace_adapter_manifest(self):
         with self.assertRaises(ValueError):
