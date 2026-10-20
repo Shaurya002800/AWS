@@ -1,5 +1,22 @@
 # RewindGuard X work status
 
+## Lowest-credit configuration prepared (20 October 2026)
+
+The owner authorized removing the USD 25 minimum and minimizing credits.
+Deployment now requires FREE/ACTIVE with positive credits only; no fixed reserve.
+Synthetic RDS automated backups are disabled, explicit restore snapshots remain,
+logs retain one day, and application teardown retains no synthetic final snapshot.
+The plan is one evaluation followed by immediate database stop. There is no Paid
+upgrade. Remaining storage/key charges still consume credits while retained.
+
+Verification: full pytest 74 passed, 16 PostgreSQL tests skipped (no local DSN),
+one dependency deprecation warning; local cfn-lint passes. Free-plan API check
+observed FREE/ACTIVE with positive credits. No full application deployment was
+confirmed. Automatic review blocked the deployment due to PowerShell Microsoft
+telemetry, then rejected direct Python execution without that shell because it
+requires explicit authorization for that execution method. No further deployment
+attempts will run until that specific authorization is supplied.
+
 ## Expanded application prepared, awaiting upload authorization (20 October 2026)
 
 Private RDS and isolated restore, Lambda/Step Functions, Cognito/JWT identity,

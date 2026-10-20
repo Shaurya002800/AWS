@@ -69,8 +69,8 @@ kept privately with the raw evidence. Difference observed during the run:
 and credits can be delayed. Resource runtime/storage/request measurements are
 recorded in private evidence. No claim of an exact finalized charge is made.
 The project must remain on the Free plan for the owner's zero-out-of-pocket
-requirement. The deployment reserves USD 25 credits and uses a two-hour idle
-window. Idle serving databases are stopped; expired unused candidates and their
+requirement. There is no fixed credit reserve. A two-hour idle safety fallback remains;
+databases are stopped immediately after evaluation. Idle serving databases are stopped; expired unused candidates and their
 synthetic snapshots are removed. Stopped RDS storage, secrets, the signing key,
 and monitoring can continue using credits. Recheck usage before each demo.
 

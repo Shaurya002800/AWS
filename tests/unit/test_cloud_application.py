@@ -107,3 +107,16 @@ def test_idle_cleanup_preserves_active_candidate(monkeypatch):
     cleanup.handler({},None)
     rds.stop_db_instance.assert_called_once_with(DBInstanceIdentifier=active)
     rds.delete_db_instance.assert_called_once_with(DBInstanceIdentifier=unused,SkipFinalSnapshot=True,DeleteAutomatedBackups=True)
+
+
+def test_free_plan_guard_accepts_small_positive_balance_and_rejects_paid(monkeypatch):
+    from scripts import deploy_application as deploy
+    from unittest.mock import MagicMock
+    service=MagicMock()
+    monkeypatch.setattr(deploy,'sdk',lambda *args:service)
+    state={'accountPlanType':'FREE','accountPlanStatus':'ACTIVE','accountPlanRemainingCredits':{'unit':'USD','amount':0.01}}
+    service.get_account_plan_state.return_value=state
+    assert deploy.free_guard(None)==state
+    for invalid in ({**state,'accountPlanType':'PAID'}, {**state,'accountPlanStatus':'EXPIRED'}, {**state,'accountPlanRemainingCredits':{'unit':'USD','amount':0}}):
+        service.get_account_plan_state.return_value=invalid
+        with pytest.raises(RuntimeError): deploy.free_guard(None)

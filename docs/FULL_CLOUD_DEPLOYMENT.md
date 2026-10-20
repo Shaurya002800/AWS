@@ -13,9 +13,9 @@ Prepared on 20 October 2026. The core DynamoDB/S3/SQS stack is live and verified
 
 ## Cost boundary
 
-The deployer and demo startup require a verified ACTIVE FREE plan and at least USD 25 remaining credits. Neither upgrades the project. All regional resources use ap-southeast-2. Credits are consumed by RDS, storage, KMS, API, logging, and other metered services; a new account alone does not establish eligibility.
+The deployer and demo startup require a verified ACTIVE FREE plan and positive remaining credits, without a fixed reserve. Neither upgrades the project. All regional resources use ap-southeast-2. Credits are consumed by RDS, storage, KMS, API, logging, and other metered services; a new account alone does not establish eligibility.
 
-Plan for a short synthetic demonstration, with a conservative USD 5 credit allowance rather than a price guarantee. Database expiry tags target two hours and cleanup runs every 30 minutes. Idle serving databases are stopped, unused expired candidates and synthetic snapshots are deleted. Stopped database storage, keys, secrets, and logs can continue consuming credits. RDS can restart stopped instances automatically, so these controls are not a permanent zero-usage guarantee. Recheck project status and delete the application stack after the final demo if it is no longer needed. Never switch to Paid to bypass a deployment rejection.
+Use one short synthetic evaluation and stop both databases immediately afterward. Automated backups are disabled; the explicit test snapshot still exercises backup restoration. Logs expire after one day. The synthetic application database is deleted without a retained final snapshot on stack teardown. Database expiry tags target two hours and cleanup runs every 30 minutes. Idle serving databases are stopped, unused expired candidates and synthetic snapshots are deleted. Stopped database storage, keys, secrets, and logs can continue consuming credits. RDS can restart stopped instances automatically, so these controls are not a permanent zero-usage guarantee. Recheck project status and delete the application stack after the final demo if it is no longer needed. Never switch to Paid to bypass a deployment rejection.
 
 ## Owner run commands after upload/deployment authorization
 

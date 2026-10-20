@@ -53,9 +53,9 @@ def template():
         'DBName':'rgx','MasterUsername':'rgx_admin','MasterUserPassword':join(['{{resolve:secretsmanager:',ref('DbSecret'),':SecretString:password}}']),
         'DBSubnetGroupName':ref('DbSubnetGroup'),'VPCSecurityGroups':[ref('LiveDbSg')],
         'AvailabilityZone':attr('Subnet1','AvailabilityZone'),'PubliclyAccessible':False,'MultiAZ':False,
-        'EnableIAMDatabaseAuthentication':True,'BackupRetentionPeriod':1,'CopyTagsToSnapshot':True,
+        'EnableIAMDatabaseAuthentication':True,'BackupRetentionPeriod':0,'CopyTagsToSnapshot':True,
         'DeletionProtection':False,'AutoMinorVersionUpgrade':True,'EnableCloudwatchLogsExports':['postgresql'],
-        'Tags':tags+[{'Key':'ExpiresAt','Value':ref('DemoExpiresAt')}]},DeletionPolicy='Snapshot',UpdateReplacePolicy='Snapshot')
+        'Tags':tags+[{'Key':'ExpiresAt','Value':ref('DemoExpiresAt')}]},DeletionPolicy='Delete',UpdateReplacePolicy='Delete')
     add('ControlTable','AWS::DynamoDB::Table',{'AttributeDefinitions':[{'AttributeName':'pk','AttributeType':'S'}],
         'KeySchema':[{'AttributeName':'pk','KeyType':'HASH'}],'BillingMode':'PAY_PER_REQUEST','Tags':tags})
     add('EvidenceKey','AWS::KMS::Key',{'Description':'RewindGuard evidence signatures','KeySpec':'ECC_NIST_P256','KeyUsage':'SIGN_VERIFY',
@@ -83,7 +83,7 @@ def template():
     code={'S3Bucket':ref('DocumentBucketName'),'S3Key':ref('CodeKey'),'S3ObjectVersion':ref('CodeVersion')}
     def function(name,handler,role_name,variables,vpc=None,condition=None):
         function_name='rgx-'+name.lower()
-        add(name+'Log','AWS::Logs::LogGroup',{'LogGroupName':'/aws/lambda/'+function_name,'RetentionInDays':7,'Tags':tags},
+        add(name+'Log','AWS::Logs::LogGroup',{'LogGroupName':'/aws/lambda/'+function_name,'RetentionInDays':1,'Tags':tags},
             **({'Condition':condition} if condition else {}))
         props={'FunctionName':function_name,'Runtime':'python3.12','Architectures':['x86_64'],'Handler':handler,
             'Role':attr(role_name,'Arn'),'Code':code,'Timeout':120,'MemorySize':256,'ReservedConcurrentExecutions':2,
@@ -108,7 +108,7 @@ def template():
        'EVIDENCE_KEY':attr('EvidenceKey','Arn'),'LIVE_DB_ID':ref('Database'),'CANDIDATE_DB_SG':ref('CandidateDbSg'),
        'SERVING_DB_SG':ref('ServingDbSg'),'DB_SUBNET_GROUP':ref('DbSubnetGroup'),'DB_AZ':attr('Subnet1','AvailabilityZone')}
     function('RecoveryFunction','backend.cloud.recovery.handler','RecoveryRole',cloudbase)
-    add('WorkflowLog','AWS::Logs::LogGroup',{'LogGroupName':'/aws/vendedlogs/states/rgx-recovery','RetentionInDays':7,'Tags':tags})
+    add('WorkflowLog','AWS::Logs::LogGroup',{'LogGroupName':'/aws/vendedlogs/states/rgx-recovery','RetentionInDays':1,'Tags':tags})
     add('WorkflowRole','AWS::IAM::Role',{'AssumeRolePolicyDocument':{'Version':'2012-10-17','Statement':[
         {'Effect':'Allow','Principal':{'Service':'states.amazonaws.com'},'Action':'sts:AssumeRole'}]},
         'Policies':[{'PolicyName':'invoke-recovery-only','PolicyDocument':{'Version':'2012-10-17','Statement':[

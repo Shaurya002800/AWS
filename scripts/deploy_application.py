@@ -36,8 +36,8 @@ def sdk(sess,name,region=REGION):
 def free_guard(sess):
     result=sdk(sess,'freetier','us-east-1').get_account_plan_state()
     credit=result.get('accountPlanRemainingCredits',{})
-    if result.get('accountPlanType')!='FREE' or result.get('accountPlanStatus')!='ACTIVE' or credit.get('unit')!='USD' or credit.get('amount',0)<25:
-        raise RuntimeError('Deployment held: FREE/ACTIVE project and at least USD 25 credit reserve are required')
+    if result.get('accountPlanType')!='FREE' or result.get('accountPlanStatus')!='ACTIVE' or credit.get('unit')!='USD' or credit.get('amount',0)<=0:
+        raise RuntimeError('Deployment held: FREE/ACTIVE project and positive remaining credits are required (no fixed reserve)')
     return result
 
 
@@ -139,7 +139,7 @@ def deploy(sess):
     (dest/'application-outputs.json').write_text(json.dumps(outputs,indent=2),encoding='utf-8')
     print(json.dumps({'status':'APPLICATION_DEPLOYED','api_url':outputs['ApiUrl'],'ui_url':outputs['ApiUrl']+'/ui',
                      'database':'private RDS PostgreSQL; IAM authentication','bootstrap_access':'removed',
-                     'standby_after':'two hours; cleanup stops serving DB and deletes expired unused candidates'},indent=2),flush=True)
+                     'standby_after':'two-hour safety fallback; stop immediately after evaluation'},indent=2),flush=True)
     return outputs
 
 
