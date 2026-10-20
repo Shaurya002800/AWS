@@ -99,7 +99,7 @@ def template():
         sub('arn:${AWS::Partition}:rds:${AWS::Region}:${AWS::AccountId}:db:rgx-candidate-*'),
         sub('arn:${AWS::Partition}:rds:${AWS::Region}:${AWS::AccountId}:snapshot:rgx-snapshot-*'),
         sub('arn:${AWS::Partition}:rds:${AWS::Region}:${AWS::AccountId}:subgrp:${DbSubnetGroup}')]
-    role('RecoveryRole',[authority_policy,controls(['ACTIVE','CANDIDATE#*'],write=True),*s3_policy,signer_policy,invoke_policy,
+    role('RecoveryRole',[{'Effect':'Allow','Action':'lambda:InvokeFunction','Resource':attr('CleanupFunction','Arn')},authority_policy,controls(['ACTIVE','CANDIDATE#*'],write=True),*s3_policy,signer_policy,invoke_policy,
         {'Effect':'Allow','Action':'dynamodb:ConditionCheckItem','Resource':core_table},
         {'Effect':'Allow','Action':['rds:DescribeDBInstances','rds:DescribeDBSnapshots','rds:ListTagsForResource'],'Resource':'*'},
         {'Effect':'Allow','Action':['rds:CreateDBSnapshot','rds:RestoreDBInstanceFromDBSnapshot','rds:ModifyDBInstance','rds:AddTagsToResource'],
@@ -107,7 +107,7 @@ def template():
     cloudbase={**base,'DATA_FUNCTION':ref('DataFunction'),'CANDIDATE_FUNCTION':ref('CandidateFunction'),
        'EVIDENCE_KEY':attr('EvidenceKey','Arn'),'LIVE_DB_ID':{'Fn::If':['SourceDatabaseEnabled',ref('Database'),'retired']},'CANDIDATE_DB_SG':ref('CandidateDbSg'),
        'SERVING_DB_SG':ref('ServingDbSg'),'DB_SUBNET_GROUP':ref('DbSubnetGroup'),'DB_AZ':attr('Subnet1','AvailabilityZone')}
-    function('RecoveryFunction','backend.cloud.recovery.handler','RecoveryRole',cloudbase)
+    function('RecoveryFunction','backend.cloud.recovery.handler','RecoveryRole',{**cloudbase,'CLEANUP_FUNCTION':ref('CleanupFunction')})
     add('WorkflowLog','AWS::Logs::LogGroup',{'LogGroupName':'/aws/vendedlogs/states/rgx-recovery','RetentionInDays':1,'Tags':tags})
     add('WorkflowRole','AWS::IAM::Role',{'AssumeRolePolicyDocument':{'Version':'2012-10-17','Statement':[
         {'Effect':'Allow','Principal':{'Service':'states.amazonaws.com'},'Action':'sts:AssumeRole'}]},
@@ -173,7 +173,7 @@ def template():
     add('ApiInvokePermission','AWS::Lambda::Permission',{'FunctionName':ref('HttpFunction'),'Action':'lambda:InvokeFunction',
         'Principal':'apigateway.amazonaws.com','SourceArn':sub('arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*')})
     role('CleanupRole',[{'Effect':'Allow','Action':['rds:DescribeDBInstances','rds:DescribeDBSnapshots','rds:ListTagsForResource'],'Resource':'*'},
-         {'Effect':'Allow','Action':['rds:StopDBInstance','rds:DeleteDBInstance','rds:DeleteDBSnapshot'],'Resource':rds_resources},controls(['ACTIVE'])])
+         {'Effect':'Allow','Action':['rds:StopDBInstance','rds:DeleteDBInstance','rds:DeleteDBSnapshot'],'Resource':rds_resources},controls(['ACTIVE','CANDIDATE#*'])])
     function('CleanupFunction','backend.cloud.cleanup.handler','CleanupRole',{'CONTROL_TABLE':ref('ControlTable')})
     add('CleanupSchedule','AWS::Events::Rule',{'ScheduleExpression':'rate(30 minutes)','State':'ENABLED',
         'Targets':[{'Id':'cleanup','Arn':attr('CleanupFunction','Arn')}]})

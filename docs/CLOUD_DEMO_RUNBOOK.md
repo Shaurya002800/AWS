@@ -49,3 +49,9 @@ Only after explicit owner confirmation, `--execute` updates CloudFormation to re
 the original permanently without a final snapshot. The retained-database parameter
 defaults to true, so ordinary deployments preserve it. Existing completed evidence
 is in FINAL_CLOUD_EVALUATION.md; a held run must never be presented as a success.
+
+After successful publication, cleanup reclaims the previously published disposable
+candidate once it is no longer ACTIVE, including if it is stopped. The new serving
+candidate is preserved. Deletion can take several minutes; wait for the slot to
+be released before another recovery. Unexpired isolated candidates are preserved.
+The original rgx-live was retired through CloudFormation after owner approval.

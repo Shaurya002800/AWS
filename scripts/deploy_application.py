@@ -74,6 +74,15 @@ def wait_stack(cf,operation):
     cf.get_waiter('stack_'+operation+'_complete').wait(StackName=STACK,WaiterConfig={'Delay':15,'MaxAttempts':160})
 
 
+def preserve_lifecycle_parameters(params,existing):
+    previous={x['ParameterKey']:x.get('ParameterValue') for x in existing.get('Parameters',[])}
+    # Code updates must never re-enable paid bootstrap networking or recreate
+    # the original database that the owner explicitly retired.
+    for key in ('EnableBootstrap','RetainOriginalDatabase'):
+        if key in previous: params[key]=previous[key]
+    return params
+
+
 def deploy(sess):
     free_guard(sess)
     cf=sdk(sess,'cloudformation')
@@ -96,10 +105,11 @@ def deploy(sess):
     version=max(versions,key=lambda value:tuple(int(x) for x in value.split('.')))
     params={'AuthorityTableName':core['AuthorityTableName'],'DocumentBucketName':core['DocumentBucketName'],
             'CodeKey':key,'CodeVersion':uploaded['VersionId'],'DbEngineVersion':version,
-            'DemoExpiresAt':str(int(time.time())+7200),'EnableBootstrap':'true'}
+            'DemoExpiresAt':str(int(time.time())+7200),'EnableBootstrap':'true','RetainOriginalDatabase':'true'}
     try:
         existing,_=stack_outputs(cf,STACK)
         kind='CREATE' if existing['StackStatus']=='REVIEW_IN_PROGRESS' else 'UPDATE'
+        if kind=='UPDATE': preserve_lifecycle_parameters(params,existing)
         if existing['StackStatus'] not in {'CREATE_COMPLETE','UPDATE_COMPLETE','REVIEW_IN_PROGRESS'}:
             raise RuntimeError('Existing application stack needs inspection: '+existing['StackStatus'])
     except ClientError as error:

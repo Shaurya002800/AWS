@@ -1,5 +1,21 @@
 # RewindGuard X work status
 
+## Approved original retirement and repeat-run cleanup — 20 October 2026
+
+The owner approved permanent retirement of the superseded synthetic rgx-live.
+CloudFormation completed removal with RetainOriginalDatabase=false, preserving
+the published candidate and signed evidence. The repeated full evaluation passed all 15 checks in 462.77 seconds,
+run 54008557ae134b2c807e18d38fa79ce1. Raw counts changed from 1/1/1 to 0/0/0;
+KMS verification and tamper rejection passed. A post-run cleanup read permission
+was corrected and regression-covered; operational cleanup and review restart
+are being verified separately.
+Cleanup now reclaims non-active disposable candidates with trusted RELEASED
+records, including stopped candidates, without waiting for their idle expiry.
+Successful publication requests asynchronous cleanup; the schedule retries it.
+The active candidate and an unexpired isolated candidate remain protected.
+Validation: 99 Python tests passed, 16 local PostgreSQL skips, seven frontend checks.
+
+
 ## Repeat-run capacity correction — 20 October 2026
 
 Owner run 59f8756dfee549088f6b044742a4bd1a failed at restore because the Free

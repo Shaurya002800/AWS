@@ -1,4 +1,4 @@
-"""Stop idle live databases and remove expired, explicitly disposable candidates."""
+"""Stop idle databases and reclaim expired or superseded disposable candidates."""
 import json
 import os
 import time
@@ -17,14 +17,20 @@ def handler(event,context):
             name=item['DBInstanceIdentifier']
             if name!='rgx-live' and not name.startswith('rgx-candidate-'): continue
             tags={x['Key']:x['Value'] for x in rds.list_tags_for_resource(ResourceName=item['DBInstanceArn'])['TagList']}
-            if tags.get('Project')!='rewindguard-x' or int(tags.get('ExpiresAt',str(now+1)))>now: continue
+            if tags.get('Project')!='rewindguard-x': continue
+            expired=int(tags.get('ExpiresAt',str(now+1)))<=now
+            retired=False
+            if name!=active_id and name.startswith('rgx-candidate-') and tags.get('Disposable')=='true':
+                record=get_record('CANDIDATE#'+name)
+                retired=bool(record and record.get('status')=='RELEASED')
+            if not expired and not retired: continue
             state=item['DBInstanceStatus']
             if name==active_id and state=='available':
                 rds.stop_db_instance(DBInstanceIdentifier=name)
                 results.append({'kind':'idle_serving_database_stopped'})
-            elif name.startswith('rgx-candidate-') and tags.get('Disposable')=='true' and state=='available':
+            elif name.startswith('rgx-candidate-') and tags.get('Disposable')=='true' and state in {'available','stopped'}:
                 rds.delete_db_instance(DBInstanceIdentifier=name,SkipFinalSnapshot=True,DeleteAutomatedBackups=True)
-                results.append({'kind':'expired_candidate_deleted'})
+                results.append({'kind':'superseded_candidate_deleted' if retired else 'expired_candidate_deleted'})
             elif name=='rgx-live' and state=='available':
                 rds.stop_db_instance(DBInstanceIdentifier=name)
                 results.append({'kind':'idle_live_database_stopped'})

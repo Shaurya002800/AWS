@@ -108,7 +108,7 @@ def handler(event,context):
                 code=execution.get('cause','')
                 if code in {'RecoveryCapacityUnavailable','InstanceQuotaExceededFault'}:
                     result['code']='RESTORE_CAPACITY_REQUIRED'
-                    result['detail']='AWS Free plan RDS capacity is full, including stopped databases. Recovery cannot create an isolated candidate. The owner must retire an unused database before retrying; do not upgrade the plan.'
+                    result['detail']='AWS Free plan RDS capacity is full, including stopped databases. Recovery cannot create an isolated candidate. Wait for cleanup of the previous disposable candidate, or ask the owner to retire an unused database before retrying; do not upgrade the plan.'
                 else:
                     result['detail']='Workflow held; no recovery candidate was published. Inspect project monitoring.'
             return response(200,result)

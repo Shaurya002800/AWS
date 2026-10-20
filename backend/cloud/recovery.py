@@ -156,5 +156,10 @@ def handler(event,context):
         result=publish(candidate_id,event['scope_digest'])
         summary={**event,'release':result,'finished_at':int(time.time())}
         client('s3').put_object(Bucket=os.environ['DOCUMENT_BUCKET'],Key='evidence/'+run+'/summary.json',Body=canonical(summary),ContentType='application/json')
+        # Cleanup failure must not undo a verified publication. The schedule retries.
+        try:
+            client('lambda').invoke(FunctionName=os.environ['CLEANUP_FUNCTION'],InvocationType='Event',Payload=b'{}')
+        except Exception as error:
+            print(json.dumps({'event':'post_release_cleanup_pending','type':type(error).__name__}))
         return summary
     raise ValueError('Unknown recovery action')

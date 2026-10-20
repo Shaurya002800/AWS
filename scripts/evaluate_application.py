@@ -29,7 +29,7 @@ def report_file(result):
     outcome=result.get('workflow_result',{})
     text=f'''# RewindGuard X — cloud evaluation
 
-Measured at {result['measured_at']} in `{REGION}`. This is a synthetic research
+Measured at {result['measured_at']} in `{REGION}`. Run: `{result.get('run_id','not recorded in the earlier evaluator')}`. This is a synthetic research
 prototype result, not a production security certification or legal assessment.
 
 ## Actual deployment
@@ -69,8 +69,11 @@ kept privately with the raw evidence. Difference observed during the run:
 and credits can be delayed. Database configuration, workflow duration, and sampled request latencies are
 recorded in private evidence. No claim of an exact finalized charge is made.
 The project must remain on the Free plan for the owner's zero-out-of-pocket
-requirement. There is no fixed credit reserve. A two-hour idle safety fallback remains;
-databases are stopped immediately after evaluation. Idle serving databases are stopped; expired unused candidates and their
+requirement. There is no fixed credit reserve. Workflow candidates carry a two-hour fallback expiry;
+review startup sets the serving window to 30 minutes by default. The standard evaluator
+stops databases after evaluation; an explicitly requested review session can instead
+keep the approved serving database available briefly. Cleanup checks every 30 minutes,
+with immediate cleanup requested after publication for superseded disposable candidates. Their
 synthetic snapshots are removed. Stopped RDS storage, secrets, the signing key,
 and monitoring can continue using credits. Recheck usage before each demo.
 
@@ -143,6 +146,7 @@ def evaluate(sess):
         response,_=call(base,renewed(),'/v1/lab/recovery',{'subject_id':subject})
         if response.status_code!=202: raise RuntimeError('Recovery start failed: HTTP '+str(response.status_code))
         run=response.json()['run_id']
+        result['run_id']=run
         print('Cloud snapshot/recovery workflow started. Private RDS restore can take 15–40 minutes.',flush=True)
         status=None
         for attempt in range(360):

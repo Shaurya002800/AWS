@@ -209,3 +209,52 @@ def test_original_database_retirement_is_opt_in_and_failure_reason_is_preserved(
     states=generated['Resources']['RecoveryWorkflow']['Properties']['Definition']['States']
     assert states['Snapshot']['Catch'][0]['ResultPath']=='$.failure'
     assert states['Hold']['CausePath']=='$.failure.Error'
+
+
+def test_cleanup_reclaims_superseded_released_candidate_before_expiry(monkeypatch):
+    from backend.cloud import cleanup
+    from unittest.mock import MagicMock
+    rds=MagicMock()
+    old='rgx-candidate-old'; current='rgx-candidate-current'; pending='rgx-candidate-pending'
+    rows=[{'DBInstanceIdentifier':name,'DBInstanceArn':name,'DBInstanceStatus':'stopped' if name==old else 'available'} for name in (old,current,pending)]
+    def pages(kind):
+        p=MagicMock()
+        p.paginate.return_value=[{'DBInstances':rows}] if kind=='describe_db_instances' else [{'DBSnapshots':[]}]
+        return p
+    rds.get_paginator.side_effect=pages
+    rds.list_tags_for_resource.return_value={'TagList':[{'Key':'Project','Value':'rewindguard-x'},{'Key':'Disposable','Value':'true'},{'Key':'ExpiresAt','Value':'9999999999'}]}
+    monkeypatch.setattr(cleanup,'client',lambda _:rds)
+    monkeypatch.setattr(cleanup,'get_record',lambda key: {'db_id':current} if key=='ACTIVE' else {'status':'RELEASED' if key.endswith(old) else 'ISOLATED'})
+    result=cleanup.handler({},None)
+    rds.delete_db_instance.assert_called_once_with(DBInstanceIdentifier=old,SkipFinalSnapshot=True,DeleteAutomatedBackups=True)
+    rds.stop_db_instance.assert_not_called()
+    assert result['actions']==[{'kind':'superseded_candidate_deleted'}]
+
+
+@pytest.mark.parametrize('cleanup_fails',[False,True])
+def test_release_requests_cleanup_without_undoing_verified_publication(monkeypatch,cleanup_fails):
+    from backend.cloud import recovery
+    from unittest.mock import MagicMock
+    services={name:MagicMock() for name in ('rds','s3','lambda')}
+    monkeypatch.setattr(recovery,'client',lambda name:services[name])
+    monkeypatch.setenv('DOCUMENT_BUCKET','bucket')
+    monkeypatch.setenv('CLEANUP_FUNCTION','cleanup')
+    monkeypatch.setattr(recovery,'publish',lambda *args:{'state':'RELEASED'})
+    if cleanup_fails:services['lambda'].invoke.side_effect=RuntimeError('retry cleanup later')
+    value=recovery.handler({'action':'release','run_id':'test','tenant_id':'synthetic','scope_digest':'digest','scope':{'tenant_id':'synthetic','subject_id':'demo_test','subject_generation':1}},None)
+    assert value['release']['state']=='RELEASED'
+    services['lambda'].invoke.assert_called_once_with(FunctionName='cleanup',InvocationType='Event',Payload=b'{}')
+
+
+def test_redeploy_preserves_owner_retirement_and_disabled_bootstrap():
+    from scripts.deploy_application import preserve_lifecycle_parameters
+    parameters={'CodeKey':'new-code','EnableBootstrap':'true','RetainOriginalDatabase':'true'}
+    existing={'Parameters':[{'ParameterKey':'EnableBootstrap','ParameterValue':'false'},{'ParameterKey':'RetainOriginalDatabase','ParameterValue':'false'}]}
+    updated=preserve_lifecycle_parameters(parameters,existing)
+    assert updated=={'CodeKey':'new-code','EnableBootstrap':'false','RetainOriginalDatabase':'false'}
+
+
+def test_cleanup_role_can_read_candidate_release_records_without_writing_them():
+    statements=template()['Resources']['CleanupRole']['Properties']['Policies'][0]['PolicyDocument']['Statement']
+    control=next(s for s in statements if s.get('Condition',{}).get('ForAllValues:StringLike',{}).get('dynamodb:LeadingKeys')==['ACTIVE','CANDIDATE#*'])
+    assert control['Action']==['dynamodb:GetItem']
