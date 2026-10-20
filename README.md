@@ -12,11 +12,11 @@
 | Private RDS, Lambda, Step Functions, Cognito, KMS, IAM, monitoring | Deployed in ap-southeast-2 |
 | Real snapshot recovery evaluation | All 15 checks passed; target profile/document/index counts changed from 1/1/1 to 0/0/0 |
 | Signed evidence | Real KMS verification and tamper rejection passed |
-| Cost controls | Free plan active; no USD 25 minimum; both databases confirmed stopped; disposable snapshots removed |
-| Local test suite | 79 passed + 6 frontend checks; 16 PostgreSQL tests require a local DSN and are exercised by CI's PostgreSQL service |
+| Cost controls | Free plan active; no USD 25 minimum; on-demand 30-minute serving window; source kept stopped; disposable snapshots removed |
+| Local test suite | 88 passed + 7 frontend checks; 16 PostgreSQL tests require a local DSN and are exercised by CI's PostgreSQL service |
 
 See the [actual cloud evaluation](docs/FINAL_CLOUD_EVALUATION.md), [demo start/sign-in/stop runbook](docs/CLOUD_DEMO_RUNBOOK.md), and [detailed status](docs/STATUS.md).
-Stopped databases must be resumed before a live demo. Retained storage and signing resources can still consume credits. These are synthetic research results, not production certification.
+Start with the [review guide](docs/REVIEW_GUIDE.md). A private owner first-login file is prepared locally; set your password on first sign-in. Stopped databases must be resumed before a live demo. Retained storage and signing resources can still consume credits. These are synthetic research results, not production certification.
 
 **Current offline checkpoint:** see [OFFLINE_COMPLETION.md](docs/OFFLINE_COMPLETION.md).
 Run `python -m unittest discover -s tests/offline -v` and
@@ -73,4 +73,4 @@ Open `http://127.0.0.1:8000/ui` for the local lab dashboard. Set `RGX_TEST_POSTG
 
 ## Contributor boundary
 
-The owner implements the entire project. Local adapter evidence is based on verification reads, not merely successful invocation. The object version store is an in-memory S3 model, not a claim that real S3 has been deployed. The inner evidence certificate has a SHA-256 digest and remains marked `UNSIGNED_LOCAL`; the updated local runtime wraps it in an HMAC-SHA256 authenticated envelope. KMS/public-key signing remains pending. See the [evaluation report](docs/EVALUATION.md) and [AWS readiness runbook](docs/AWS_READINESS.md) for measured results, deployment gates, service status, and limitations.
+The owner implements the entire project. Local adapter evidence is based on verification reads, not merely successful invocation. The object version store is an in-memory S3 model, not a claim that real S3 has been deployed. The inner evidence certificate has a SHA-256 digest and remains marked `UNSIGNED_LOCAL`; the updated local runtime wraps it in an HMAC-SHA256 authenticated envelope. These statements describe the offline adapters; the deployed cloud path uses verified KMS signatures as recorded above. See the [evaluation report](docs/EVALUATION.md) and [AWS readiness runbook](docs/AWS_READINESS.md) for measured results, deployment gates, service status, and limitations.

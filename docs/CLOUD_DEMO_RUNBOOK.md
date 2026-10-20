@@ -5,7 +5,7 @@ Sign-in is required for data operations. Public registration is disabled.
 
 ## Owner operator setup
 
-From the repository terminal, create an operator once. The command prompts for a password locally and does not send invitations or print the password:
+A private review-owner login has been prepared. Open ignored local file evidence/private/review-login.txt and complete the required first-login password change. Never commit or share that file. For an additional operator, from the repository terminal, create one once. The command prompts for a password locally and does not send invitations or print the password:
 
 ~~~powershell
 .venv/Scripts/python.exe -m scripts.create_operator --username suhani
@@ -19,7 +19,7 @@ Sign in on the hosted page with that username and password. The browser uses the
 .venv/Scripts/python.exe -m scripts.start_cloud_demo
 ~~~
 
-This checks that the project is FREE/ACTIVE with positive credits, resumes the active private RDS database, and extends its two-hour idle safety window. There is no USD 25 minimum or reservation. Startup can take several minutes. Do not upgrade the project to Paid.
+This checks that the project is FREE/ACTIVE with positive credits, resumes the active private RDS database, and sets a 30-minute review window after startup. Scheduled cleanup runs every 30 minutes, so it can stop the database up to 30 minutes after expiry. Only the approved serving database is resumed; the original source stays stopped. Use --minutes 15 through --minutes 120 to change the window. There is no USD 25 minimum or reservation. Startup can take several minutes. Do not upgrade the project to Paid.
 
 Use the page to create a synthetic profile and run the snapshot/erase/restore workflow. An old snapshot is restored into a private isolated candidate; reconciliation and signed evidence checks precede publication. Workflow status is polled by the UI. Keep the browser page open during the demonstration.
 

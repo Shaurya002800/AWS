@@ -1,5 +1,24 @@
 # RewindGuard X work status
 
+## Review-ready checkpoint — 20 October 2026
+
+All nine current-serving live checks passed at 13:36 UTC, including a real SQL
+profile read, erasure, KMS verification/tamper rejection, object-version removal
+and tenant isolation. No new snapshot or RDS instance was created by this check.
+The earlier full recovery evaluation passed all 15 checks; these are separate scopes.
+A private owner login has its first-login password-change challenge verified;
+credentials are ignored locally and the owner must choose their own password.
+The approved database is resumed only for a short review window; source stays stopped.
+Startup now defaults to 30 minutes with cleanup polling every 30 minutes.
+Sign-out and a direct completed-evaluation link finish the UI review flow.
+Checkpoint verification is now read-only: it cannot redeploy a stale code patch
+or stop an intentional review session. See REVIEW_GUIDE.md.
+
+Validation: 88 Python tests and seven frontend tests pass locally; 16 PostgreSQL
+tests require a DSN and run against the GitHub CI PostgreSQL service.
+
+Earlier entries below are historical checkpoints.
+
 ## Notebook-style demo UI — 20 October 2026
 
 The cloud demo was redesigned around the supplied notebook/scrapbook reference:

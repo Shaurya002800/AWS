@@ -58,3 +58,11 @@ test('paused database failure leaves a retryable seed and no fake results',async
 test('failed recovery is held, never presented as released',async()=>{
   const f=await fixture({callback:true,held:true});await f.nodes.seed.onclick();await f.nodes.recover.onclick();await f.timers.shift()();assert.equal(f.nodes['release-state'].textContent,'HELD');assert.equal(f.pipeline.classes.has('is-complete'),false);assert.equal(f.nodes.download.disabled,false);
 });
+
+test('sign-out clears in-memory tokens and uses the configured logout endpoint',async()=>{
+ const f=await fixture({callback:true}); assert.equal(f.nodes.signout.hidden,false); f.nodes.signout.onclick();
+ assert.equal(vm.runInContext('bearer === null && refreshToken === null',f.context),true);
+ assert.equal(f.nodes.seed.disabled,true); const url=new URL(f.redirects[0]);
+ assert.equal(url.origin,'https://auth.example.invalid'); assert.equal(url.pathname,'/logout');
+ assert.equal(url.searchParams.get('logout_uri'),'http://localhost/ui');
+});

@@ -9,6 +9,7 @@ const $ = id => document.getElementById(id);
 const statusText = $('status');
 const result = $('result');
 const signin = $('signin');
+const signout = $('signout');
 const labSignin = $('lab-signin');
 const seed = $('seed');
 const recover = $('recover');
@@ -86,6 +87,7 @@ async function callback() {
   const me = await api('/v1/me');
   $('identity').textContent = me.operator ? 'You’re signed in as a lab operator. Let’s make a little controlled chaos.' : 'You’re signed in. A lab operator role is required to create experiments.';
   signin.hidden = true;
+  signout.hidden = false;
   labSignin.textContent = 'You’re signed in ✓';
   labSignin.disabled = true;
   $('session-label').hidden = false;
@@ -182,5 +184,20 @@ download.onclick = () => {
   link.click();
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+signout.onclick = () => {
+  if (pollTimer) clearTimeout(pollTimer);
+  bearer = null;
+  refreshToken = null;
+  expiresAt = 0;
+  currentSubject = null;
+  sessionStorage.removeItem('rgx-pkce');
+  resetEvidence();
+  seed.disabled = true;
+  recover.disabled = true;
+  setStatus('Signing out. Submitted workflows continue in the project.');
+  const url = new URL(AUTH_CONFIG.authDomain+'/logout');
+  url.search = new URLSearchParams({client_id:AUTH_CONFIG.clientId,logout_uri:new URL('/ui',AUTH_CONFIG.redirectUri).href});
+  location.assign(url);
 };
 callback().catch(error => setStatus(error.message, 'error'));
