@@ -1,5 +1,15 @@
 # RewindGuard X work status
 
+## Expanded application prepared, awaiting upload authorization (20 October 2026)
+
+Private RDS and isolated restore, Lambda/Step Functions, Cognito/JWT identity,
+scoped IAM, KMS evidence, monitoring, cleanup, and real-cloud evaluation scripts
+are implemented locally. See FULL_CLOUD_DEPLOYMENT.md. Local cfn-lint passes.
+The expanded stack has NOT been uploaded or deployed: automatic approval review
+blocked sending the new application template to AWS pending explicit approval.
+The existing verified core remains live. Full cloud evaluation and measured
+costs remain pending; no production completion is claimed.
+
 ## Live AWS core verified (20 October 2026)
 
 Stack `rewindguard-x-core` deployed in `ap-southeast-2`: AuthorityTable,

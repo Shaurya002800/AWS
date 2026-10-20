@@ -23,3 +23,5 @@ evidence/private/
 .local-postgres/
 .local-authority/
 .uv-cache/
+.lambda-deps/
+.cfn-tools/

@@ -109,3 +109,10 @@ class AwsS3Adapter:
         response = self.client.get_object(Bucket=self.bucket, Key=key)
         content = response["Body"].read()
         return content if self.authority.may_read(scope) else None
+
+    def read_version_for_ingestion(self, scope: SubjectScope, key: str, version_id: str) -> bytes | None:
+        if not key.startswith(self.prefix(scope)) or not self.authority.may_read(scope):
+            return None
+        response = self.client.get_object(Bucket=self.bucket, Key=key, VersionId=version_id)
+        content = response['Body'].read()
+        return content if self.authority.may_read(scope) else None
