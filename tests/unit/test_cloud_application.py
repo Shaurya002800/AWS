@@ -156,3 +156,12 @@ def test_cloud_evaluation_stops_databases_on_success_and_failure(failure):
         else:
             assert evaluation.run_evaluation(session)==result
         stop.assert_called_once_with(session)
+
+
+def test_cloud_page_serves_its_own_stylesheet_without_changing_local_ui():
+    page=handler({'rawPath':'/ui','requestContext':{'http':{'method':'GET'}}},None)
+    style=handler({'rawPath':'/style.css','requestContext':{'http':{'method':'GET'}}},None)
+    assert page['statusCode']==200 and 'class="notebook"' in page['body']
+    assert style['statusCode']==200 and '--paper:' in style['body']
+    assert style['headers']['content-type']=='text/css; charset=utf-8'
+    assert "script-src 'self'" in page['headers']['content-security-policy']

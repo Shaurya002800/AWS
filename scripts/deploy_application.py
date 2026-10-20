@@ -54,7 +54,7 @@ def bundle():
             for item in folder.rglob('*'):
                 if item.is_file() and '__pycache__' not in item.parts and item.suffix in {'.py','.sql','.pem'}:
                     archive.write(item,item.relative_to(ROOT).as_posix())
-        for name in ('cloud.html','cloud.js','style.css'):
+        for name in ('cloud.html','cloud.js','cloud.css','style.css'):
             archive.write(ROOT/'frontend'/name,'frontend/'+name)
         for item in deps.rglob('*'):
             if item.is_file() and '__pycache__' not in item.parts:

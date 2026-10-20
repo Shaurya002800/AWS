@@ -59,14 +59,14 @@ def handler(event,context):
         if method=='GET' and path=='/health':
             return response(200,{'status':'ok','mode':'aws-hosted','region':os.environ['AWS_REGION']})
         if method=='GET' and path in {'/','/ui','/callback'}:
-            return response(200,(Path(__file__).parents[2]/'frontend'/'cloud.html').read_text(), 'text/html; charset=utf-8')
+            return response(200,(Path(__file__).parents[2]/'frontend'/'cloud.html').read_text(encoding='utf-8'), 'text/html; charset=utf-8')
         if method=='GET' and path=='/app.js':
             config={'clientId':os.environ['USER_POOL_CLIENT'],'authDomain':os.environ['AUTH_DOMAIN'],
                     'redirectUri':os.environ['API_URL']+'/callback'}
-            script='const AUTH_CONFIG='+json.dumps(config)+';\n'+(Path(__file__).parents[2]/'frontend'/'cloud.js').read_text()
+            script='const AUTH_CONFIG='+json.dumps(config)+';\n'+(Path(__file__).parents[2]/'frontend'/'cloud.js').read_text(encoding='utf-8')
             return response(200,script,'application/javascript; charset=utf-8')
         if method=='GET' and path=='/style.css':
-            return response(200,(Path(__file__).parents[2]/'frontend'/'style.css').read_text(),'text/css; charset=utf-8')
+            return response(200,(Path(__file__).parents[2]/'frontend'/'cloud.css').read_text(encoding='utf-8'),'text/css; charset=utf-8')
         user=principal(event)
         payload=body(event) if method=='POST' else dict(event.get('queryStringParameters') or {})
         if method=='GET' and path=='/v1/me':

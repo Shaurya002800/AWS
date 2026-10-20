@@ -4,6 +4,8 @@
 
 ## Current cloud progress — 20 October 2026
 
+[Open the notebook-style cloud demo ↗](https://es3l5u1w1c.execute-api.ap-southeast-2.amazonaws.com/ui) · [UI design and checks](docs/UI_REDESIGN.md)
+
 | Component | Verified status |
 | --- | --- |
 | DynamoDB, S3, SQS | Deployed and live smoke checks passed |
@@ -11,7 +13,7 @@
 | Real snapshot recovery evaluation | All 15 checks passed; target profile/document/index counts changed from 1/1/1 to 0/0/0 |
 | Signed evidence | Real KMS verification and tamper rejection passed |
 | Cost controls | Free plan active; no USD 25 minimum; both databases confirmed stopped; disposable snapshots removed |
-| Local test suite | 78 passed; 16 PostgreSQL tests require a local DSN and are exercised by CI's PostgreSQL service |
+| Local test suite | 79 passed + 6 frontend checks; 16 PostgreSQL tests require a local DSN and are exercised by CI's PostgreSQL service |
 
 See the [actual cloud evaluation](docs/FINAL_CLOUD_EVALUATION.md), [demo start/sign-in/stop runbook](docs/CLOUD_DEMO_RUNBOOK.md), and [detailed status](docs/STATUS.md).
 Stopped databases must be resumed before a live demo. Retained storage and signing resources can still consume credits. These are synthetic research results, not production certification.

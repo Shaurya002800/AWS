@@ -1,5 +1,21 @@
 # RewindGuard X work status
 
+## Notebook-style demo UI — 20 October 2026
+
+The cloud demo was redesigned around the supplied notebook/scrapbook reference:
+ruled paper, bold title, taped illustrations, colored stickers, dark experiment
+cards and yellow evidence panels. Secure sign-in, operator restrictions and
+PKCE remain. Structured evidence renders actual returned counts, held/released
+states and signing status; run JSON can be downloaded. No placeholder success
+metrics are shown. Details and validation limits: UI_REDESIGN.md.
+
+Validation: 79 Python tests passed, 16 local PostgreSQL tests skipped; six
+frontend behavior tests passed. OpenAPI has no diff. Mobile/desktop DOM checks
+showed no horizontal overflow; browser screenshot capture was unavailable.
+The UI deployment reached UPDATE_COMPLETE; hosted HTML/CSS/JS checks passed.
+Bootstrap remains disabled and both databases are confirmed stopped.
+The earlier 15-check real-cloud recovery evaluation remains a separate result.
+
 ## Current verified cloud and CI checkpoint — 20 October 2026
 
 The full real-cloud evaluation passed all 15 checks. The restored snapshot had
