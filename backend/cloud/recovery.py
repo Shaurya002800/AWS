@@ -14,6 +14,18 @@ from contracts.adapter_protocol import SubjectScope
 PROJECT='rewindguard-x'
 
 
+class RecoveryCapacityUnavailable(RuntimeError):
+    pass
+
+
+def ensure_restore_capacity(rds):
+    # The verified Free plan permits two instances, including stopped ones.
+    # Refuse before snapshot/erasure; never delete a database or upgrade a plan.
+    instances=[item for page in rds.get_paginator('describe_db_instances').paginate() for item in page['DBInstances']]
+    if len(instances)>=2:
+        raise RecoveryCapacityUnavailable('A free RDS instance slot is required before recovery can start')
+
+
 def get_record(pk):
     item=client('dynamodb').get_item(TableName=os.environ['CONTROL_TABLE'],Key={'pk':{'S':pk}},ConsistentRead=True).get('Item')
     return json.loads(item['value']['S']) if item else None
@@ -96,6 +108,7 @@ def handler(event,context):
     candidate_id='rgx-candidate-'+run
     rds=client('rds')
     if action=='snapshot':
+        ensure_restore_capacity(rds)
         live=active_db()
         if db(live)['DBInstanceStatus']!='available': raise RuntimeError('Database is in standby; start it before a demo')
         try:

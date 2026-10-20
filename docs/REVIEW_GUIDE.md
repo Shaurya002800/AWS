@@ -1,7 +1,8 @@
 # Review guide — 20 October 2026
 
 [Open the live demo](https://es3l5u1w1c.execute-api.ap-southeast-2.amazonaws.com/ui).
-The implemented synthetic course demo is ready for review. Authentication, private
+The completed synthetic evaluation is available for review. Fresh full recovery runs
+require a free RDS instance slot; stopped instances also occupy slots. Authentication, private
 PostgreSQL, Lambda, Step Functions, DynamoDB, S3, SQS, KMS and monitoring are deployed
 in ap-southeast-2. This is a research demonstration, not production certification.
 
@@ -17,7 +18,7 @@ in ap-southeast-2. This is a research demonstration, not production certificatio
    isolated restored candidates are reconciled before publication. Object versions,
    derived index entries, and stale events have separate guards.
 5. For a live interaction, sign in, create a synthetic profile, and inspect the response.
-   A fresh full recovery run creates another temporary RDS candidate and takes several
+   A fresh full recovery run requires capacity for another temporary RDS candidate and takes several
    minutes (472.34 seconds in the measured run). Use the completed evidence for a short
    review; a new run is optional. Evidence panels show actual results, not seeded metrics.
 6. Download run JSON if desired, then sign out. Signing out does not cancel a running workflow.

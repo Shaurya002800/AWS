@@ -6,7 +6,7 @@ import httpx
 from scripts.deploy_application import session,sdk,stack_outputs,bundle,STACK,free_guard,wait_stack
 
 
-def deploy_ui(sess):
+def deploy_ui(sess, *, update_template=False):
     free_guard(sess)
     cf=sdk(sess,'cloudformation')
     info,_=stack_outputs(cf,STACK)
@@ -22,7 +22,12 @@ def deploy_ui(sess):
     updates={'CodeKey':key,'CodeVersion':upload['VersionId']}
     parameters=[{'ParameterKey':p['ParameterKey'],'ParameterValue':updates[p['ParameterKey']]} if p['ParameterKey'] in updates else {'ParameterKey':p['ParameterKey'],'UsePreviousValue':True} for p in info['Parameters']]
     print('Publishing notebook UI to the existing application stack',flush=True)
-    cf.update_stack(StackName=STACK,UsePreviousTemplate=True,Parameters=parameters,Capabilities=['CAPABILITY_IAM'])
+    if update_template:
+        from infra.build_application import template
+        deployment_template={'TemplateBody':json.dumps(template())}
+    else:
+        deployment_template={'UsePreviousTemplate':True}
+    cf.update_stack(StackName=STACK,**deployment_template,Parameters=parameters,Capabilities=['CAPABILITY_IAM'])
     wait_stack(cf,'update')
     info,outputs=stack_outputs(cf,STACK)
     base=outputs['ApiUrl']

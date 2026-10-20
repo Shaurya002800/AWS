@@ -137,12 +137,12 @@ function renderRun(value) {
   $('signature-state').textContent = output.evidence_signed ? 'Evidence signed by AWS KMS. The run JSON records the signing result.' : 'No signing result was returned for this run.';
   $('workflow-state').textContent = released ? 'THE PAST STAYS PUT' : 'RECOVERY HELD';
   $('evidence-description').textContent = released ? 'Old data met a new boundary. Here’s what your run actually found.' : 'The gate stayed closed. Review the run details before trying again.';
-  $('evidence-note').textContent = released ? '↳ The trusted recovery workflow approved this candidate before publication.' : '↳ A held workflow is not evidence of successful recovery. Check project monitoring.';
+  $('evidence-note').textContent = released ? '↳ The trusted recovery workflow approved this candidate before publication.' : (value.detail || '↳ A held workflow is not evidence of successful recovery. Check project monitoring.');
   if (released) {
     $('step-recover').classList.add('is-complete');
     document.querySelector('.pipeline').classList.add('is-complete');
   }
-  setStatus(released ? 'Guarded recovery completed. Your verification results are ready below.' : 'Recovery held. Review project monitoring before retrying.', released ? 'idle' : 'error');
+  setStatus(released ? 'Guarded recovery completed. Your verification results are ready below.' : (value.detail || 'Recovery held. Review project monitoring before retrying.'), released ? 'idle' : 'error');
   seed.disabled = false;
 }
 async function poll(runId) {

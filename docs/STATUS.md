@@ -1,5 +1,20 @@
 # RewindGuard X work status
 
+## Repeat-run capacity correction — 20 October 2026
+
+Owner run 59f8756dfee549088f6b044742a4bd1a failed at restore because the Free
+plan permits two RDS instances, including stopped ones. Snapshot and erasure
+completed; no restored candidate was created or published. The original source
+and the previously published candidate occupied both slots. The earlier 15-check
+evaluation remains valid, but repeat full recovery was incorrectly called ready.
+A new capacity guard runs before snapshot/erasure. Failure error codes survive
+Step Functions catch handling and the UI shows a safe, actionable reason.
+A previewed CloudFormation cleanup can permanently retire only the superseded
+synthetic original rgx-live while preserving the published candidate. It is opt-in
+and has not been executed; owner confirmation is required for irreversible deletion.
+Validation: 94 Python tests passed, 16 local PostgreSQL skips, seven frontend tests.
+
+
 ## Review-ready checkpoint — 20 October 2026
 
 All nine current-serving live checks passed at 13:36 UTC, including a real SQL

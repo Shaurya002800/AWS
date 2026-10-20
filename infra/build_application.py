@@ -55,7 +55,7 @@ def template():
         'AvailabilityZone':attr('Subnet1','AvailabilityZone'),'PubliclyAccessible':False,'MultiAZ':False,
         'EnableIAMDatabaseAuthentication':True,'BackupRetentionPeriod':0,'CopyTagsToSnapshot':True,
         'DeletionProtection':False,'AutoMinorVersionUpgrade':True,'EnableCloudwatchLogsExports':['postgresql'],
-        'Tags':tags+[{'Key':'ExpiresAt','Value':ref('DemoExpiresAt')}]},DeletionPolicy='Delete',UpdateReplacePolicy='Delete')
+        'Tags':tags+[{'Key':'ExpiresAt','Value':ref('DemoExpiresAt')}]},Condition='SourceDatabaseEnabled',DeletionPolicy='Delete',UpdateReplacePolicy='Delete')
     add('ControlTable','AWS::DynamoDB::Table',{'AttributeDefinitions':[{'AttributeName':'pk','AttributeType':'S'}],
         'KeySchema':[{'AttributeName':'pk','KeyType':'HASH'}],'BillingMode':'PAY_PER_REQUEST','Tags':tags})
     add('EvidenceKey','AWS::KMS::Key',{'Description':'RewindGuard evidence signatures','KeySpec':'ECC_NIST_P256','KeyUsage':'SIGN_VERIFY',
@@ -79,7 +79,7 @@ def template():
         'Resource':sub('arn:${AWS::Partition}:rds-db:${AWS::Region}:${AWS::AccountId}:dbuser:*/rgx_recovery')}],vpc=True)
     role('BootstrapRole',[{'Effect':'Allow','Action':'secretsmanager:GetSecretValue','Resource':ref('DbSecret')}],vpc=True,condition='BootstrapEnabled')
     base={'AUTHORITY_TABLE':ref('AuthorityTableName'),'CONTROL_TABLE':ref('ControlTable'),'DOCUMENT_BUCKET':ref('DocumentBucketName'),
-          'LIVE_DB_HOST':attr('Database','Endpoint.Address')}
+          'LIVE_DB_HOST':{'Fn::If':['SourceDatabaseEnabled',attr('Database','Endpoint.Address'),'disabled']}}
     code={'S3Bucket':ref('DocumentBucketName'),'S3Key':ref('CodeKey'),'S3ObjectVersion':ref('CodeVersion')}
     def function(name,handler,role_name,variables,vpc=None,condition=None):
         function_name='rgx-'+name.lower()
@@ -92,7 +92,7 @@ def template():
         return add(name,'AWS::Lambda::Function',props,DependsOn=[name+'Log'],**({'Condition':condition} if condition else {}))
     function('DataFunction','backend.cloud.data.handler','DataRole',{**base,'WORKER_MODE':'live'},vpc='DataSg')
     function('CandidateFunction','backend.cloud.data.handler','CandidateRole',{**base,'WORKER_MODE':'candidate'},vpc='RecoverySg')
-    function('BootstrapFunction','backend.cloud.data.bootstrap','BootstrapRole',{'LIVE_DB_HOST':attr('Database','Endpoint.Address'),
+    function('BootstrapFunction','backend.cloud.data.bootstrap','BootstrapRole',{'LIVE_DB_HOST':{'Fn::If':['SourceDatabaseEnabled',attr('Database','Endpoint.Address'),'disabled']},
         'DB_SECRET_ARN':ref('DbSecret')},vpc='DataSg',condition='BootstrapEnabled')
     invoke_policy={'Effect':'Allow','Action':'lambda:InvokeFunction','Resource':[attr('DataFunction','Arn'),attr('CandidateFunction','Arn')]}
     rds_resources=[sub('arn:${AWS::Partition}:rds:${AWS::Region}:${AWS::AccountId}:db:rgx-live'),
@@ -105,7 +105,7 @@ def template():
         {'Effect':'Allow','Action':['rds:CreateDBSnapshot','rds:RestoreDBInstanceFromDBSnapshot','rds:ModifyDBInstance','rds:AddTagsToResource'],
          'Resource':rds_resources}])
     cloudbase={**base,'DATA_FUNCTION':ref('DataFunction'),'CANDIDATE_FUNCTION':ref('CandidateFunction'),
-       'EVIDENCE_KEY':attr('EvidenceKey','Arn'),'LIVE_DB_ID':ref('Database'),'CANDIDATE_DB_SG':ref('CandidateDbSg'),
+       'EVIDENCE_KEY':attr('EvidenceKey','Arn'),'LIVE_DB_ID':{'Fn::If':['SourceDatabaseEnabled',ref('Database'),'retired']},'CANDIDATE_DB_SG':ref('CandidateDbSg'),
        'SERVING_DB_SG':ref('ServingDbSg'),'DB_SUBNET_GROUP':ref('DbSubnetGroup'),'DB_AZ':attr('Subnet1','AvailabilityZone')}
     function('RecoveryFunction','backend.cloud.recovery.handler','RecoveryRole',cloudbase)
     add('WorkflowLog','AWS::Logs::LogGroup',{'LogGroupName':'/aws/vendedlogs/states/rgx-recovery','RetentionInDays':1,'Tags':tags})
@@ -120,7 +120,7 @@ def template():
         states['Set'+label]={'Type':'Pass','Result':action,'ResultPath':'$.action','Next':label}
         states[label]={'Type':'Task','Resource':'arn:aws:states:::lambda:invoke','Parameters':{
             'FunctionName':attr('RecoveryFunction','Arn'),'Payload.$':'$'},'OutputPath':'$.Payload',
-            'TimeoutSeconds':150,'Catch':[{'ErrorEquals':['States.ALL'],'Next':'Hold'}],
+            'TimeoutSeconds':150,'Catch':[{'ErrorEquals':['States.ALL'],'ResultPath':'$.failure','Next':'Hold'}],
             **({'End':True} if end else {'Next':next_state})}
     task('Snapshot','snapshot','SetSnapshotStatus')
     task('SnapshotStatus','snapshot_status','SnapshotReady')
@@ -133,7 +133,7 @@ def template():
     states['WaitRestore']={'Type':'Wait','Seconds':30,'Next':'RestoreStatus'}
     task('Validate','validate','SetRelease')
     task('Release','release',None,end=True)
-    states['Hold']={'Type':'Fail','Error':'RecoveryHeld','Cause':'Quarantine remains in force; no serving pointer was published.'}
+    states['Hold']={'Type':'Fail','Error':'RecoveryHeld','CausePath':'$.failure.Error'}
     add('RecoveryWorkflow','AWS::StepFunctions::StateMachine',{'StateMachineName':'rgx-recovery','StateMachineType':'STANDARD',
         'RoleArn':attr('WorkflowRole','Arn'),'Definition':{'StartAt':'SetSnapshot','TimeoutSeconds':3600,'States':states},
         'LoggingConfiguration':{'Level':'ALL','IncludeExecutionData':False,'Destinations':[{'CloudWatchLogsLogGroup':{'LogGroupArn':attr('WorkflowLog','Arn')}}]},'Tags':tags})
@@ -187,12 +187,13 @@ def template():
         'Statistic':'Sum','Period':300,'EvaluationPeriods':1,'Threshold':1,'ComparisonOperator':'GreaterThanOrEqualToThreshold','TreatMissingData':'notBreaching'})
     return {'AWSTemplateFormatVersion':'2010-09-09','Description':'RewindGuard private RDS and authenticated cloud recovery research deployment',
         'Parameters':{**{key:{'Type':'String'} for key in ['AuthorityTableName','DocumentBucketName','CodeKey','CodeVersion','DbEngineVersion','DemoExpiresAt']},
-            'EnableBootstrap':{'Type':'String','Default':'true','AllowedValues':['true','false']}},
-        'Conditions':{'BootstrapEnabled':{'Fn::Equals':[ref('EnableBootstrap'),'true']}},'Resources':r,
+            'EnableBootstrap':{'Type':'String','Default':'true','AllowedValues':['true','false']},
+            'RetainOriginalDatabase':{'Type':'String','Default':'true','AllowedValues':['true','false']}},
+        'Conditions':{'BootstrapEnabled':{'Fn::Equals':[ref('EnableBootstrap'),'true']},'SourceDatabaseEnabled':{'Fn::Equals':[ref('RetainOriginalDatabase'),'true']}},'Resources':r,
         'Outputs':{key:{'Value':value} for key,value in {'ApiUrl':api_url,'UserPoolId':ref('UserPool'),'UserPoolClientId':ref('UserPoolClient'),
             'AuthDomain':auth_domain,'EvidenceKeyArn':attr('EvidenceKey','Arn'),'ControlTableName':ref('ControlTable'),
             'DataFunctionName':ref('DataFunction'),'CandidateFunctionName':ref('CandidateFunction'),'RecoveryFunctionName':ref('RecoveryFunction'),
-            'RecoveryStateMachineArn':ref('RecoveryWorkflow'),'DatabaseId':ref('Database'),
+            'RecoveryStateMachineArn':ref('RecoveryWorkflow'),'DatabaseId':{'Fn::If':['SourceDatabaseEnabled',ref('Database'),'retired']},
             'BootstrapFunctionName':{'Fn::If':['BootstrapEnabled',ref('BootstrapFunction'),'disabled']},
             'CleanupFunctionName':ref('CleanupFunction')}.items()}}
 

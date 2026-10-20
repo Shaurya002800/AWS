@@ -36,3 +36,16 @@ The scheduled safety cleanup also stops expired serving databases and deletes ex
 ## Evaluation evidence
 
 The evaluator creates and deletes a temporary synthetic Cognito operator without notifications. Raw outputs are ignored under evidence/private. FINAL_CLOUD_EVALUATION.md is generated only by the real-cloud evaluator and records observed checks and delayed-credit-measurement limitations. A research demonstration is not production security certification.
+
+## Free plan restore capacity
+
+Stopped RDS instances still occupy instance slots. This project encountered a two-instance
+Free plan limit on the owner’s repeat recovery run. The capacity guard now holds before
+snapshot/erasure if both slots are occupied. Do not upgrade to Paid.
+
+The superseded synthetic original database can be previewed with
+`python -m scripts.retire_original_database`. It preserves the published candidate.
+Only after explicit owner confirmation, `--execute` updates CloudFormation to remove
+the original permanently without a final snapshot. The retained-database parameter
+defaults to true, so ordinary deployments preserve it. Existing completed evidence
+is in FINAL_CLOUD_EVALUATION.md; a held run must never be presented as a success.

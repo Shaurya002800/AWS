@@ -165,3 +165,47 @@ def test_cloud_page_serves_its_own_stylesheet_without_changing_local_ui():
     assert style['statusCode']==200 and '--paper:' in style['body']
     assert style['headers']['content-type']=='text/css; charset=utf-8'
     assert "script-src 'self'" in page['headers']['content-security-policy']
+
+
+def test_capacity_guard_counts_stopped_instances_and_never_erases(monkeypatch):
+    from backend.cloud import recovery
+    from unittest.mock import MagicMock
+    rds=MagicMock()
+    rds.get_paginator.return_value.paginate.return_value=[{'DBInstances':[{'DBInstanceStatus':'available'}]},{'DBInstances':[{'DBInstanceStatus':'stopped'}]}]
+    monkeypatch.setattr(recovery,'client',lambda _:rds)
+    with patch.object(recovery,'active_db') as active:
+        with pytest.raises(recovery.RecoveryCapacityUnavailable):
+            recovery.handler({'action':'snapshot','run_id':'test','tenant_id':'synthetic','scope':{'tenant_id':'synthetic','subject_id':'demo_test','subject_generation':1}},None)
+        active.assert_not_called()
+    rds.create_db_snapshot.assert_not_called()
+    rds.delete_db_instance.assert_not_called()
+
+
+def test_capacity_guard_allows_one_existing_database():
+    from backend.cloud.recovery import ensure_restore_capacity
+    from unittest.mock import MagicMock
+    rds=MagicMock()
+    rds.get_paginator.return_value.paginate.return_value=[{'DBInstances':[{}]}]
+    ensure_restore_capacity(rds)
+
+
+def test_authenticated_failure_exposes_safe_capacity_reason_only():
+    event={'rawPath':'/v1/runs/test','requestContext':{'http':{'method':'GET'}}}
+    user={'tenant_id':'synthetic','subject_id':'self','operator':True}
+    with patch('backend.cloud.http.principal',return_value=user),patch('backend.cloud.http.get_record',return_value={'tenant_id':'synthetic','subject_id':'self','execution_arn':'test'}),patch('backend.cloud.http.client') as sdk:
+        sdk.return_value.describe_execution.return_value={'status':'FAILED','cause':'RecoveryCapacityUnavailable'}
+        import json
+        value=json.loads(handler(event,None)['body'])
+        assert value['code']=='RESTORE_CAPACITY_REQUIRED'
+        assert 'do not upgrade' in value['detail']
+        sdk.return_value.get_execution_history.assert_not_called()
+
+
+def test_original_database_retirement_is_opt_in_and_failure_reason_is_preserved():
+    generated=template()
+    assert generated['Parameters']['RetainOriginalDatabase']['Default']=='true'
+    assert generated['Resources']['Database']['Condition']=='SourceDatabaseEnabled'
+    assert generated['Outputs']['DatabaseId']['Value']['Fn::If'][2]=='retired'
+    states=generated['Resources']['RecoveryWorkflow']['Properties']['Definition']['States']
+    assert states['Snapshot']['Catch'][0]['ResultPath']=='$.failure'
+    assert states['Hold']['CausePath']=='$.failure.Error'

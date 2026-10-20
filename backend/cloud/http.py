@@ -104,7 +104,13 @@ def handler(event,context):
                 output=json.loads(execution['output'])
                 result['result']={k:v for k,v in output.items() if k in
                      {'erasure_state','raw_before','guarded_before','raw_after','evidence_signed','release','finished_at'}}
-            if execution['status'] in {'FAILED','TIMED_OUT','ABORTED'}: result['detail']='Workflow held; inspect project monitoring.'
+            if execution['status'] in {'FAILED','TIMED_OUT','ABORTED'}:
+                code=execution.get('cause','')
+                if code in {'RecoveryCapacityUnavailable','InstanceQuotaExceededFault'}:
+                    result['code']='RESTORE_CAPACITY_REQUIRED'
+                    result['detail']='AWS Free plan RDS capacity is full, including stopped databases. Recovery cannot create an isolated candidate. The owner must retire an unused database before retrying; do not upgrade the plan.'
+                else:
+                    result['detail']='Workflow held; no recovery candidate was published. Inspect project monitoring.'
             return response(200,result)
         return response(404,{'detail':'Not found'})
     except PermissionError:
