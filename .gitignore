@@ -22,3 +22,4 @@ lab/reports/
 evidence/private/
 .local-postgres/
 .local-authority/
+.uv-cache/

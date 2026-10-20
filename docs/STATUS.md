@@ -1,5 +1,26 @@
 # RewindGuard X work status
 
+## AWS core connection preparation (20 October 2026, Windows)
+
+AWS CLI login and toolkit setup were verified using profile `rewindguard`.
+The project reported FREE/ACTIVE with credits verified privately, expiry 20 April 2027,
+and selected Region `ap-southeast-2`. The original `infra/core.json` passed
+CloudFormation validation. No stack creation has succeeded in this session:
+subsequent deployment attempts fail on the local AWS login-cache file with
+`Permission denied`, before an AWS request is sent.
+
+The hybrid runtime now discovers core outputs from CloudFormation and wires
+real DynamoDB/S3/SQS adapters to local records/index. `scripts/connect_aws.ps1`
+performs the Free-plan/credit gate, checks the exact four-resource change set,
+deploys, and runs `scripts/aws_smoke.py`. The smoke test is prepared, NOT yet
+live-verified. See `AWS_CORE_CONNECTION.md` for scope, cost envelope, and teardown.
+
+Local verification: `.venv/Scripts/python.exe -m pytest -q --basetemp
+.local-authority/pytest-final-cloud` passed 64 tests; 16 PostgreSQL-dependent
+tests were skipped because no local test DSN is configured. One dependency
+deprecation warning remains. Compilation and PowerShell syntax checks pass.
+Current blocker: refresh browser-based AWS login in the user's normal terminal.
+
 ## 20 October 2026 local checkpoint
 
 Recovery task validation and release now require a host-supplied candidate ID

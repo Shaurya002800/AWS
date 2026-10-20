@@ -10,11 +10,11 @@ Fill this file with verified, non-secret facts before AWS deployment. The owner 
 | Project owner Git username | `Shaurya002800` (repository owner) |
 | Course rubric location | No separate rubric supplied; blueprint and course instruction govern scope |
 | Required AWS services to deploy | No fixed list supplied; evidence-backed use of relevant AWS services is expected |
-| AWS account plan | TODO: Free or Paid, checked in Billing console |
-| Free Tier/credit expiry | TODO: date only; do not commit billing screenshots or account identifiers |
+| AWS account plan | FREE / ACTIVE, verified through Free Tier API on 20 October 2026; recheck before every cloud run |
+| Free Tier/credit expiry | 20 April 2027; private balance checked before deployment, not recorded in Git |
 | Maximum total project spend | Zero out-of-pocket paid spend |
 | Daily cloud experiment ceiling | Zero out-of-pocket paid spend; stop cloud work before credits or free allowances are exhausted |
-| AWS Region | TODO: one region selected after eligibility/pricing check |
+| AWS Region | `ap-southeast-2`, verified named profile and owner-provided project Region |
 | Demo date | No fixed date supplied; complete as soon as practical |
 | Final submission date | No fixed date supplied |
 

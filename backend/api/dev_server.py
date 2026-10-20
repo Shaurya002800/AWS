@@ -15,7 +15,16 @@ def main() -> None:
     if os.environ.get("RGX_ENV") != "local":
         raise SystemExit("Set RGX_ENV=local before starting")
     key = os.environ.get("RGX_LOCAL_EVIDENCE_KEY", "").encode()
-    tasks = local_runtime(os.environ.get("RGX_LOCAL_DIRECTORY", ".local-authority"), key)
+    directory = os.environ.get("RGX_LOCAL_DIRECTORY", ".local-authority")
+    mode = os.environ.get("RGX_RUNTIME", "local")
+    if mode == "aws":
+        from backend.aws_runtime import aws_runtime
+        runtime = aws_runtime(directory, key, profile=os.environ.get("RGX_AWS_PROFILE", "rewindguard"))
+        tasks = runtime.tasks
+    elif mode == "local":
+        tasks = local_runtime(directory, key)
+    else:
+        raise SystemExit("RGX_RUNTIME must be local or aws")
     authority = tasks.authority
     scope = SubjectScope("t01", "p017", 4)
     try:
