@@ -1,5 +1,25 @@
 # RewindGuard X work status
 
+## Live AWS core verified (20 October 2026)
+
+Stack `rewindguard-x-core` deployed in `ap-southeast-2`: AuthorityTable,
+DocumentBucket, DeadLetterQueue, and ProfileEventQueue all reached
+CREATE_COMPLETE. The stack passed the active FREE-plan and credit-reserve gate.
+The PowerShell tag parsing issue was fixed by passing `infra/core-tags.json`.
+
+`scripts/connect_aws.ps1` completed successfully. Its real AWS smoke test
+observed VERIFIED erasure, zero remaining subject S3 versions, rejection of a
+new S3 write for the erased subject, rejection of the matching delayed SQS
+message, and a valid local HMAC evidence envelope. Evidence is kept privately
+at `evidence/private/aws-smoke.json`, not in Git.
+
+This is HYBRID_AWS_CORE_LOCAL_RECORDS: DynamoDB, S3, SQS and the dead-letter
+queue are live. SQLite operational records/index and API execution remain
+local. RDS, Lambda, hosted API, and KMS signing are not deployed. Resources
+remain available for the next project run. Credit consumption is not a
+measured bill; Free-plan status and reserve are rechecked on each cloud startup.
+The earlier credential-cache blocker below is resolved for this run.
+
 ## AWS core connection preparation (20 October 2026, Windows)
 
 AWS CLI login and toolkit setup were verified using profile `rewindguard`.

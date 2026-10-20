@@ -1,5 +1,9 @@
 # AWS core connection
 
+Verified live on 20 October 2026: the four-resource stack deployed successfully
+and the synthetic smoke test passed erasure, S3 version removal, stale-write
+blocking, and matching SQS replay rejection. Records and index remain local.
+
 The `rewindguard` profile uses browser login, not committed access keys. All
 project resources are restricted to `ap-southeast-2`. An active FREE plan and at
 least USD 10 remaining credits are required by both the connection script and

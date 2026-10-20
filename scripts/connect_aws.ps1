@@ -33,7 +33,7 @@ try {
         Write-Host 'Using the existing project core stack.'
     } else {
         $changeName = 'connect-' + (Get-Date -Format 'yyyyMMddHHmmss')
-        $null = Invoke-AwsJson cloudformation create-change-set --stack-name $stackName --change-set-name $changeName --change-set-type CREATE --template-body file://infra/core.json --tags Key=Project,Value=rewindguard-x Key=Purpose,Value=synthetic-course-demo --profile $profileName --region $projectRegion --output json
+        $null = Invoke-AwsJson cloudformation create-change-set --stack-name $stackName --change-set-name $changeName --change-set-type CREATE --template-body file://infra/core.json --tags file://infra/core-tags.json --profile $profileName --region $projectRegion --output json
         & $awsExecutable cloudformation wait change-set-create-complete --stack-name $stackName --change-set-name $changeName --profile $profileName --region $projectRegion
         if ($LASTEXITCODE -ne 0) { throw 'Change-set creation failed; no execution attempted.' }
         $change = Invoke-AwsJson cloudformation describe-change-set --stack-name $stackName --change-set-name $changeName --profile $profileName --region $projectRegion --output json
