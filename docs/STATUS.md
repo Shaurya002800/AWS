@@ -1,5 +1,29 @@
 # RewindGuard X work status
 
+## Current verified cloud and CI checkpoint — 20 October 2026
+
+The full real-cloud evaluation passed all 15 checks. The restored snapshot had
+one target profile, document and index chunk; reconciliation reduced each count
+to zero. Recovery reached RELEASED. Real KMS verification and tamper rejection,
+JWT rejection, tenant isolation, private encrypted RDS and IAM authentication passed.
+The measured workflow duration was 472.34 seconds. See FINAL_CLOUD_EVALUATION.md.
+
+Final operational verification at 12:51 UTC confirmed UPDATE_COMPLETE, bootstrap
+disabled, both databases stopped, zero synthetic test snapshots, and an active
+Free plan with positive credits. There is no fixed USD 25 reserve. Credit metering
+can lag; the observed USD 0.0 change during evaluation is not a finalized bill.
+
+GitHub's earlier red check came from the CI environment missing boto3/botocore:
+it installed only the dev extra, while the new mocked cloud tests need the aws
+extra. The workflow now installs both; GitHub Actions runtime deprecation warnings
+are addressed with current official action releases. The documented evaluator
+now always runs database/snapshot cleanup in finally, covered on success/failure.
+Local verification: 78 passed, 16 skipped for absent local PostgreSQL DSN, one
+dependency deprecation warning. OpenAPI regeneration produced no diff. GitHub CI
+runs the PostgreSQL integration tests. Its new result is tracked in the README badge.
+
+Earlier entries below are historical checkpoints.
+
 ## Live cloud application deployed; evaluation running (20 October 2026)
 
 The owner explicitly authorized direct Python deployment. Stack rewindguard-x-app

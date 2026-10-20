@@ -143,3 +143,16 @@ def test_immutable_seed_retry_requires_matching_content():
     client.head_object.return_value={'VersionId':'v1','Metadata':{'content-sha256':sha256(b'data').hexdigest()}}
     assert immutable_seed_object(client,'bucket','synthetic/key',b'data')=='v1'
     with pytest.raises(Conflict): immutable_seed_object(client,'bucket','synthetic/key',b'changed')
+
+
+@pytest.mark.parametrize('failure',[False,True])
+def test_cloud_evaluation_stops_databases_on_success_and_failure(failure):
+    from scripts import evaluate_application as evaluation
+    session=object()
+    result={'all_checks_passed':True}
+    with patch.object(evaluation,'evaluate',return_value=result,side_effect=RuntimeError('held') if failure else None), patch('scripts.stop_cloud_demo.stop') as stop:
+        if failure:
+            with pytest.raises(RuntimeError,match='held'): evaluation.run_evaluation(session)
+        else:
+            assert evaluation.run_evaluation(session)==result
+        stop.assert_called_once_with(session)

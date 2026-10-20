@@ -1,5 +1,21 @@
 # RewindGuard X
 
+[![Local checks](https://github.com/Shaurya002800/AWS/actions/workflows/local-checks.yml/badge.svg?branch=main)](https://github.com/Shaurya002800/AWS/actions/workflows/local-checks.yml)
+
+## Current cloud progress — 20 October 2026
+
+| Component | Verified status |
+| --- | --- |
+| DynamoDB, S3, SQS | Deployed and live smoke checks passed |
+| Private RDS, Lambda, Step Functions, Cognito, KMS, IAM, monitoring | Deployed in ap-southeast-2 |
+| Real snapshot recovery evaluation | All 15 checks passed; target profile/document/index counts changed from 1/1/1 to 0/0/0 |
+| Signed evidence | Real KMS verification and tamper rejection passed |
+| Cost controls | Free plan active; no USD 25 minimum; both databases confirmed stopped; disposable snapshots removed |
+| Local test suite | 78 passed; 16 PostgreSQL tests require a local DSN and are exercised by CI's PostgreSQL service |
+
+See the [actual cloud evaluation](docs/FINAL_CLOUD_EVALUATION.md), [demo start/sign-in/stop runbook](docs/CLOUD_DEMO_RUNBOOK.md), and [detailed status](docs/STATUS.md).
+Stopped databases must be resumed before a live demo. Retained storage and signing resources can still consume credits. These are synthetic research results, not production certification.
+
 **Current offline checkpoint:** see [OFFLINE_COMPLETION.md](docs/OFFLINE_COMPLETION.md).
 Run `python -m unittest discover -s tests/offline -v` and
 `python -m scripts.offline_demo` without installing packages or using AWS.
@@ -8,11 +24,11 @@ local sessions, evidence authentication, task audit, and recovery checks are
 implemented. The setup instructions below describe the original PostgreSQL
 lab; use the checkpoint document for the updated API startup and current limits.
 
-RewindGuard X is an AWS course project about preventing erased data from reappearing after a database restore, stale queue replay, S3 version recovery, or search-index rebuild. The owner is completing it solo. The local implementation contains EraseLock, PostgreSQL transaction journals, a versioned-object simulator, queue replay protection, a deterministic retrieval index, recovery gating, and a paired Resurrection Test Lab. The local API has a SQLite authority that survives restarts. Optional DynamoDB, S3 and SQS adapters and a core CloudFormation template are prepared offline. AWS deployment is pending the owner's zero-spend account check.
+RewindGuard X is an AWS course project about preventing erased data from reappearing after a database restore, stale queue replay, S3 version recovery, or search-index rebuild. The owner is completing it solo. The local implementation contains EraseLock, PostgreSQL transaction journals, a versioned-object simulator, queue replay protection, a deterministic retrieval index, recovery gating, and a paired Resurrection Test Lab. The local API has a SQLite authority that survives restarts. The DynamoDB, S3 and SQS core and the expanded private cloud application are now deployed; the cloud evaluation linked above records the observed results.
 
 Start with the [technical blueprint](docs/RewindGuard_X_Complete_Technical_Blueprint.docx), [solo implementation scope](docs/SOLO_IMPLEMENTATION.md), [project configuration](docs/PROJECT_CONFIG.md), and [current status](docs/STATUS.md). The earlier team plan is retained as historical context. Contributor agents should also read [AGENTS.md](AGENTS.md).
 
-For the owner's first AWS account, follow [AWS first-time setup](docs/AWS_FIRST_TIME_SETUP.md). It stops before creating project resources because the cloud application and zero-spend checks are not yet complete.
+For a new AWS project, [AWS first-time setup](docs/AWS_FIRST_TIME_SETUP.md) preserves the spending gate. The current project is already deployed; use the cloud demo runbook above to resume and stop it.
 
 The working branch is `main` at `https://github.com/Shaurya002800/AWS.git`; the owner requested direct pushes to it. Only the owner connects to the AWS account. The project has a zero out-of-pocket spending rule; all local work runs without AWS credentials.
 

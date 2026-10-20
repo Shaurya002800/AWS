@@ -23,14 +23,15 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     env:
+      AWS_EC2_METADATA_DISABLED: 'true'
       RGX_TEST_POSTGRES_DSN: postgresql://rgx:rgx@127.0.0.1:55432/rgx
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
         with:
           python-version: '3.11'
       - name: Install project
-        run: python -m pip install -e '.[dev]'
+        run: python -m pip install -e '.[dev,aws]'
       - name: Run offline tests
         run: PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -q
       - name: Check generated OpenAPI contract

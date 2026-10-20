@@ -198,5 +198,13 @@ def evaluate(sess):
     return result
 
 
+def run_evaluation(sess):
+    try:
+        return evaluate(sess)
+    finally:
+        from scripts.stop_cloud_demo import stop
+        stop(sess)
+
+
 if __name__=='__main__':
-    evaluate(session())
+    run_evaluation(session())
